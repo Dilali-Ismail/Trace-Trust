@@ -25,7 +25,7 @@ public class Product {
     private String category;
 
     @Column(nullable = false)
-    private boolean active;
+    private boolean active = true;
 
     @Column(name = "cost_price", precision = 10, scale = 2)
     private BigDecimal costPrice;
