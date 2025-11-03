@@ -1,14 +1,15 @@
 package org.usermanagement.traceandtrust.mapper;
 
+import jdk.dynalink.beans.StaticClass;
 import org.mapstruct.Mapper;
 import org.usermanagement.traceandtrust.dto.CreateUserRequest;
 import org.usermanagement.traceandtrust.dto.UserDto;
 import org.usermanagement.traceandtrust.entity.User;
 
 @Mapper(componentModel = "spring")
-public interface UserMapper {
+public  interface UserMapper {
 
-    UserDto toDto(User user);
-    User toEntity(CreateUserRequest request);
+    UserDto  toDto(User user);
+    User   toEntity(CreateUserRequest request);
 
 }

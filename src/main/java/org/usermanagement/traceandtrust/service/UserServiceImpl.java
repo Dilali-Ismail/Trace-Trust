@@ -6,11 +6,17 @@ import org.usermanagement.traceandtrust.dto.CreateUserRequest;
 import org.usermanagement.traceandtrust.dto.LoginRequest;
 import org.usermanagement.traceandtrust.dto.UserDto;
 import org.usermanagement.traceandtrust.entity.User;
-import org.usermanagement.traceandtrust.exeception.AuthenticationException;
-import org.usermanagement.traceandtrust.exeception.DuplicateResourceException;
-import org.usermanagement.traceandtrust.exeception.ResourceNotFoundException;
+import org.usermanagement.traceandtrust.enums.Role;
+import org.usermanagement.traceandtrust.exception.AuthenticationException;
+import org.usermanagement.traceandtrust.exception.DuplicateResourceException;
+import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
+import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
 import org.usermanagement.traceandtrust.mapper.UserMapper;
 import org.usermanagement.traceandtrust.repository.UserRepository;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,5 +46,14 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDto(user);
 
 
+    }
+
+    public List<UserDto> getAllUsers(UUID actorId){
+        User actor = userRepository.findById(actorId).orElseThrow(()-> new ResourceNotFoundException("Actor not found"));
+
+        if(!actor.getRole().equals(Role.ADMIN)){
+            throw new ForbiddenAccessException("Only an ADMIN can view the list of all users.");
+        }
+        return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
     }
 }
