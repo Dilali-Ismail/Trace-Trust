@@ -45,7 +45,6 @@ public class UserServiceImpl implements UserService {
 
         return userMapper.toDto(user);
 
-
     }
 
     public List<UserDto> getAllUsers(UUID actorId){
