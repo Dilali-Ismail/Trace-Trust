@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateProductRequest;
 import org.usermanagement.traceandtrust.dto.ProductDto;
+import org.usermanagement.traceandtrust.dto.UpdateProductRequest;
 import org.usermanagement.traceandtrust.entity.Product;
 import org.usermanagement.traceandtrust.entity.User;
 import org.usermanagement.traceandtrust.enums.Role;
@@ -52,6 +53,21 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
         return productMapper.toDto(product);
 
+
+    }
+
+    public ProductDto updateProduct(UUID productId, UpdateProductRequest request, UUID actorId){
+        checkAdminRole(actorId);
+        Product productToUpdate = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
+        productToUpdate.setName(request.getName());
+        productToUpdate.setCategory(request.getCategory());
+        productToUpdate.setCostPrice(request.getCostPrice());
+        productToUpdate.setActive(request.getActive());
+
+        Product updatedProduct = productRepository.save(productToUpdate);
+
+        return productMapper.toDto(updatedProduct);
 
     }
 

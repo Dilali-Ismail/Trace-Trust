@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CreateProductRequest;
 import org.usermanagement.traceandtrust.dto.ProductDto;
+import org.usermanagement.traceandtrust.dto.UpdateProductRequest;
 import org.usermanagement.traceandtrust.service.ProductService;
 
 import java.util.List;
@@ -44,4 +45,13 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
+    @PutMapping("/{productId}")
+    public ResponseEntity<ProductDto> updateProduct(
+            @PathVariable UUID productId,
+            @RequestHeader("X-Actor-ID") UUID actorId,
+            @Valid @RequestBody UpdateProductRequest request) {
+
+        ProductDto updatedProduct = productService.updateProduct(productId, request, actorId);
+        return ResponseEntity.ok(updatedProduct);
+    }
 }
