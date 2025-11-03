@@ -9,6 +9,7 @@ import org.usermanagement.traceandtrust.dto.CreateProductRequest;
 import org.usermanagement.traceandtrust.dto.ProductDto;
 import org.usermanagement.traceandtrust.service.ProductService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,5 +27,14 @@ public class ProductController {
         ProductDto createdProduct = productService.createProduct(request, actorId);
         return new ResponseEntity<>(createdProduct, HttpStatus.CREATED);
     }
+    @GetMapping
+    public ResponseEntity<List<ProductDto>> getAllProducts(
+            @RequestHeader("X-Actor-ID") UUID actorId) {
+
+        List<ProductDto> products = productService.getAllProducts(actorId);
+        return ResponseEntity.ok(products);
+    }
+
+
 
 }

@@ -7,13 +7,17 @@ import org.usermanagement.traceandtrust.dto.CreateProductRequest;
 import org.usermanagement.traceandtrust.dto.ProductDto;
 import org.usermanagement.traceandtrust.entity.Product;
 import org.usermanagement.traceandtrust.entity.User;
+import org.usermanagement.traceandtrust.enums.Role;
 import org.usermanagement.traceandtrust.exception.DuplicateResourceException;
+import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
 import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
 import org.usermanagement.traceandtrust.mapper.ProductMapper;
 import org.usermanagement.traceandtrust.repository.ProductRepository;
 import org.usermanagement.traceandtrust.repository.UserRepository;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,5 +36,33 @@ public class ProductServiceImpl implements ProductService {
         Product savedProduct = productRepository.save(product);
         return productMapper.toDto(savedProduct);
     }
+
+    public List<ProductDto> getAllProducts(UUID actorId) {
+        checkAdminRole(actorId);
+        return productRepository.findAll()
+                .stream()
+                .map(productMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public ProductDto getProductById(UUID productId, UUID actorId) {
+
+        checkAdminRole(actorId);
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
+        return productMapper.toDto(product);
+
+
+    }
+
+    private void checkAdminRole(UUID actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
+
+        if (actor.getRole() != Role.ADMIN) {
+            throw new ForbiddenAccessException("This action can only be performed by an ADMIN user.");
+        }
+    }
+
 
 }
