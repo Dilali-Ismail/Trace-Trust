@@ -35,6 +35,13 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductDto> getProductById(
+            @PathVariable UUID productId,
+            @RequestHeader("X-Actor-ID") UUID actorId) {
 
+        ProductDto product = productService.getProductById(productId, actorId);
+        return ResponseEntity.ok(product);
+    }
 
 }
