@@ -1,4 +1,4 @@
-package org.usermanagement.traceandtrust.exeception;
+package org.usermanagement.traceandtrust.exception;
 
 
 import org.springframework.http.HttpStatus;
@@ -10,3 +10,5 @@ public class DuplicateResourceException extends RuntimeException {
         super(message);
     }
 }
+
+

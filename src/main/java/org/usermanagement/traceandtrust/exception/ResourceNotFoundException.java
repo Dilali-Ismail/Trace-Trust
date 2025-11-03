@@ -1,4 +1,4 @@
-package org.usermanagement.traceandtrust.exeception;
+package org.usermanagement.traceandtrust.exception;
 
 
 import org.springframework.http.HttpStatus;
