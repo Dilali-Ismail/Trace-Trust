@@ -12,4 +12,5 @@ public interface ProductService {
     List<ProductDto> getAllProducts(UUID actorId);
     ProductDto getProductById(UUID productId, UUID actorId);
     ProductDto updateProduct(UUID productId, UpdateProductRequest request, UUID actorId);
+    void deleteProduct(UUID productId, UUID actorId);
 }

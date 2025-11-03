@@ -40,7 +40,7 @@ public class ProductServiceImpl implements ProductService {
 
     public List<ProductDto> getAllProducts(UUID actorId) {
         checkAdminRole(actorId);
-        return productRepository.findAll()
+        return productRepository.findAllByActiveTrue()
                 .stream()
                 .map(productMapper::toDto)
                 .collect(Collectors.toList());
@@ -49,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto getProductById(UUID productId, UUID actorId) {
 
         checkAdminRole(actorId);
-        Product product = productRepository.findById(productId)
+        Product product = productRepository.findByIdAndActiveTrue(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
         return productMapper.toDto(product);
 
@@ -68,6 +68,15 @@ public class ProductServiceImpl implements ProductService {
         Product updatedProduct = productRepository.save(productToUpdate);
 
         return productMapper.toDto(updatedProduct);
+
+    }
+    public void deleteProduct(UUID productId, UUID actorId){
+        checkAdminRole(actorId);
+        Product productToDelete = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
+        productToDelete.setActive(false);
+        productRepository.save(productToDelete);
+
 
     }
 

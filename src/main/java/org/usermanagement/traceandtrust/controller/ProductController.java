@@ -54,4 +54,13 @@ public class ProductController {
         ProductDto updatedProduct = productService.updateProduct(productId, request, actorId);
         return ResponseEntity.ok(updatedProduct);
     }
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> deleteProduct(
+            @PathVariable UUID productId,
+            @RequestHeader("X-Actor-ID") UUID actorId) {
+
+        productService.deleteProduct(productId, actorId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
