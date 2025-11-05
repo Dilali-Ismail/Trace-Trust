@@ -1,0 +1,70 @@
+package org.usermanagement.traceandtrust.service;
+
+import jakarta.transaction.Transactional;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.hibernate.stat.CacheableDataStatistics;
+import org.springframework.stereotype.Service;
+import org.usermanagement.traceandtrust.dto.CreateMovementRequest;
+import org.usermanagement.traceandtrust.dto.InventoryDto;
+import org.usermanagement.traceandtrust.entity.*;
+import org.usermanagement.traceandtrust.enums.Role;
+import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
+import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
+import org.usermanagement.traceandtrust.mapper.InventoryMapper;
+import org.usermanagement.traceandtrust.repository.*;
+
+import java.util.UUID;
+@Service
+@RequiredArgsConstructor
+
+public class InventoryServiceImpl implements InventoryService{
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final InventoryRepository inventoryRepository;
+    private final InventoryMovementRepository inventoryMovement;
+    private final InventoryMapper inventoryMapper;
+
+    @Transactional
+   public InventoryDto recordMovement(CreateMovementRequest request, UUID actorId){
+         checkAdminRole(actorId);
+       Product product = productRepository.findById(request.getProductId())
+               .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
+       Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+               .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
+
+        Inventory inventory = inventoryRepository.findByProductAndWarehouse(product, warehouse)
+                .orElseGet(()-> Inventory.builder()
+                        .product(product)
+                        .warehouse(warehouse)
+                        .quantity_hand(request.getQuantity())
+                        .build());
+
+        switch(request.getType()){
+            case INBOUND ->{
+                inventory.setQuantity_hand(inventory.getQuantity_hand() + request.getQuantity());
+                break;
+            }
+        }
+        Inventory savedInventory = inventoryRepository.save(inventory);
+
+        InventoryMovement movement = InventoryMovement.builder()
+                .product(product)
+                .warehouse(warehouse)
+                .type(request.getType())
+                .quantity(request.getQuantity())
+                .referenceDocument(request.getReferenceDocument())
+                .build();
+         inventoryMovement.save(movement);
+         return inventoryMapper.toDto(savedInventory);
+   }
+    private void checkAdminRole(UUID actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
+
+        if (actor.getRole() != Role.WAREHOUSE_MANAGER) {
+            throw new ForbiddenAccessException("Only WAREHOUSE_MANAGER can record stock movements..");
+        }
+    }
+}
