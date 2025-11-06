@@ -9,6 +9,7 @@ import org.usermanagement.traceandtrust.dto.CreateMovementRequest;
 import org.usermanagement.traceandtrust.dto.InventoryDto;
 import org.usermanagement.traceandtrust.entity.*;
 import org.usermanagement.traceandtrust.enums.Role;
+import org.usermanagement.traceandtrust.exception.BusinessException;
 import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
 import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
 import org.usermanagement.traceandtrust.mapper.InventoryMapper;
@@ -44,6 +45,19 @@ public class InventoryServiceImpl implements InventoryService{
         switch(request.getType()){
             case INBOUND ->{
                 inventory.setQuantity_hand(inventory.getQuantity_hand() + request.getQuantity());
+                break;
+            }
+            case ADJUSTMENT -> {
+                long newQtyOnHand = request.getQuantity();
+
+                if (newQtyOnHand < 0) {
+                    throw new BusinessException("Adjustment quantity cannot be a negative value.");
+                }
+
+                if (newQtyOnHand < inventory.getQuantity_reserved()) {
+                    throw new BusinessException("Adjustment failed: new quantity on hand cannot be less than reserved quantity.");
+                }
+                inventory.setQuantity_hand(newQtyOnHand);
                 break;
             }
         }
