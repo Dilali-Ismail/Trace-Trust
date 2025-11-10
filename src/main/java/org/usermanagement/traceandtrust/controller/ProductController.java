@@ -1,6 +1,7 @@
 package org.usermanagement.traceandtrust.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,5 +63,14 @@ public class ProductController {
         productService.deleteProduct(productId, actorId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{sku}/deactivate")
+    public ResponseEntity<ProductDto> deactivateProduct(
+            @PathVariable  String sku,
+            @RequestHeader("X-Actor-ID") UUID actorId) {
+
+        ProductDto deactivatedProduct = productService.deactivateProduct(sku, actorId);
+        return ResponseEntity.ok(deactivatedProduct);
     }
 }

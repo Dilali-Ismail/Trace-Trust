@@ -1,6 +1,7 @@
 package org.usermanagement.traceandtrust.service;
 
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.internal.constraintvalidators.bv.number.bound.decimal.DecimalMaxValidatorForLong;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
 import org.usermanagement.traceandtrust.dto.SalesOrderDto;
@@ -60,6 +61,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         return salesOrderMapper.toDto(savedOrder);
 
     }
+
     private User checkClientRole(UUID actorId) {
         User actor = userRepository.findById(actorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));

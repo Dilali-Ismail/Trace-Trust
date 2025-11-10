@@ -13,4 +13,6 @@ public interface ProductService {
     ProductDto getProductById(UUID productId, UUID actorId);
     ProductDto updateProduct(UUID productId, UpdateProductRequest request, UUID actorId);
     void deleteProduct(UUID productId, UUID actorId);
+    //la methode de desactivation
+    ProductDto deactivateProduct(String sku, UUID actorId);
 }
