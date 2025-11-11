@@ -1,5 +1,6 @@
 package org.usermanagement.traceandtrust.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
@@ -77,6 +78,38 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
     }
 
+    @Override
+    @Transactional
+    public SalesOrderDto cancelOrder(UUID orderId, UUID actorId){
+        checkAdminRole(actorId);
+
+        SalesOrder salesOrder = salesOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
+        switch (salesOrder.getStatus()) {
+            case CREATED:
+                salesOrder.setStatus(SalesOrderStatus.CANCELED);
+                break;
+
+            case RESERVED:
+
+                inventoryService.releaseStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId(), actorId);
+                salesOrder.setStatus(SalesOrderStatus.CANCELED);
+                break;
+
+            case SHIPPED:
+            case DELIVERED:
+                throw new BusinessException("Cannot cancel an order that has already been shipped or delivered.");
+
+            case CANCELED:
+
+                throw new BusinessException("This order has already been canceled.");
+        }
+
+        SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+        return salesOrderMapper.toDto(savedOrder);
+
+    }
+
     private User checkClientRole(UUID actorId) {
         User actor = userRepository.findById(actorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
@@ -84,6 +117,13 @@ public class SalesOrderServiceImpl implements SalesOrderService {
             throw new ForbiddenAccessException("Only CLIENT users can create sales orders.");
         }
         return actor;
+    }
+    private void checkAdminRole(UUID actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
+        if (actor.getRole() != Role.ADMIN) {
+            throw new ForbiddenAccessException("This operation is restricted to ADMIN users.");
+        }
     }
 
 }

@@ -35,4 +35,13 @@ public class SalesOrderController {
         SalesOrderDto reservedOrder = salesOrderService.reserveOrder(orderId, actorId);
         return ResponseEntity.ok(reservedOrder);
     }
+
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<SalesOrderDto> cancelOrder(
+            @PathVariable UUID orderId,
+            @RequestHeader("X-Actor-ID") UUID actorId) {
+
+        SalesOrderDto canceledOrder = salesOrderService.cancelOrder(orderId, actorId);
+        return ResponseEntity.ok(canceledOrder);
+    }
 }
