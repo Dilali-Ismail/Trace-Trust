@@ -11,5 +11,6 @@ public interface InventoryService {
     InventoryDto recordMovement(CreateMovementRequest request, UUID actorId);
     void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
     void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
+    void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
 }
 

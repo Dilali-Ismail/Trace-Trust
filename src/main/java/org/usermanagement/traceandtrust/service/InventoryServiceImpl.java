@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateMovementRequest;
 import org.usermanagement.traceandtrust.dto.InventoryDto;
 import org.usermanagement.traceandtrust.entity.*;
+import org.usermanagement.traceandtrust.enums.MovementType;
 import org.usermanagement.traceandtrust.enums.Role;
 import org.usermanagement.traceandtrust.exception.BusinessException;
 import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
@@ -111,6 +112,38 @@ public class InventoryServiceImpl implements InventoryService{
                 inventory.setQuantity_reserved(Math.max(0, newReservedQty));
                 inventoryRepository.save(inventory);
             });
+        }
+    }
+    public void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId){
+        checkAdminRole(actorId);
+
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
+        for (SalesOrderLine line : orderLines) {
+            Product product = line.getProduct();
+            int quantityToDispatch = line.getQuantity();
+
+            Inventory inventory = inventoryRepository.findByProductAndWarehouse(product, warehouse)
+                    .orElseThrow(() -> new BusinessException("Cannot dispatch stock: Inventory record not found for product " + product.getSku()));
+
+            if (inventory.getQuantity_hand() < quantityToDispatch || inventory.getQuantity_reserved() < quantityToDispatch) {
+                throw new BusinessException("Cannot dispatch stock for product " + product.getSku() + ": Inconsistent stock levels.");
+            }
+
+            inventory.setQuantity_hand(inventory.getQuantity_hand() - quantityToDispatch);
+            inventory.setQuantity_reserved(inventory.getQuantity_reserved() - quantityToDispatch);
+            inventoryRepository.save(inventory);
+
+            InventoryMovement movement = InventoryMovement.builder()
+                    .product(product)
+                    .warehouse(warehouse)
+                    .type(MovementType.OUTBOUND)
+                    .quantity(quantityToDispatch)
+                    .referenceDocument("Outbonding")
+                    .build();
+
+
+            inventoryMovement.save(movement);
         }
     }
     private void checkAdminRole(UUID actorId) {

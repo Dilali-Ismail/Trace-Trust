@@ -1,10 +1,12 @@
 package org.usermanagement.traceandtrust.service;
 
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateShipmentRequest;
 import org.usermanagement.traceandtrust.dto.ShipmentDto;
+import org.usermanagement.traceandtrust.dto.SupplierDto;
 import org.usermanagement.traceandtrust.entity.Carrier;
 import org.usermanagement.traceandtrust.entity.SalesOrder;
 import org.usermanagement.traceandtrust.entity.Shipment;
@@ -21,7 +23,10 @@ import org.usermanagement.traceandtrust.repository.SalesOrderRepository;
 import org.usermanagement.traceandtrust.repository.ShipmentRepository;
 import org.usermanagement.traceandtrust.repository.UserRepository;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,8 +37,9 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final CarrierRepository carrierRepository;
     private final UserRepository userRepository;
     private final ShipmentMapper shipmentMapper;
+    private final InventoryService inventoryService;
 
-   public  ShipmentDto createShipment(CreateShipmentRequest request, UUID actorId){
+    public  ShipmentDto createShipment(CreateShipmentRequest request, UUID actorId){
 
        checkWarehouseManagerOrAdminRole(actorId);
 
@@ -64,6 +70,38 @@ public class ShipmentServiceImpl implements ShipmentService {
        Shipment savedShipment = shipmentRepository.save(shipment);
        return shipmentMapper.toDto(savedShipment);
 
+   }
+
+    @Override
+    public List<ShipmentDto> getAllShipments(UUID actorId) {
+        checkWarehouseManagerOrAdminRole(actorId);
+
+        return shipmentRepository.findAll().stream()
+                .map(shipmentMapper::toDto)
+                .collect(Collectors.toList());
+    }
+    @Transactional
+   public ShipmentDto dispatchShipment(UUID shipmentId, UUID actorId){
+       checkWarehouseManagerOrAdminRole(actorId);
+
+       Shipment shipment = shipmentRepository.findById(shipmentId)
+               .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
+
+       if (shipment.getStatus() != ShipmentStatus.PLANNED) {
+           throw new BusinessException("Shipment can only be dispatched if its status is PLANNED.");
+       }
+
+       SalesOrder salesOrder = shipment.getSalesOrder();
+       inventoryService.dispatchStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId(), actorId);
+
+       shipment.setStatus(ShipmentStatus.IN_TRANSIT);
+       shipment.setShippedAt(Instant.now());
+
+       salesOrder.setStatus(SalesOrderStatus.SHIPPED);
+       salesOrderRepository.save(salesOrder);
+
+        Shipment savedShipment = shipmentRepository.save(shipment);
+        return shipmentMapper.toDto(savedShipment);
    }
     private void checkWarehouseManagerOrAdminRole(UUID actorId){
         User actor = userRepository.findById(actorId)
