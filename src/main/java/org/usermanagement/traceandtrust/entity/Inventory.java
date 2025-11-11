@@ -44,5 +44,4 @@ public class Inventory {
 
     @UpdateTimestamp
     private Instant updatedAt;
-
 }
