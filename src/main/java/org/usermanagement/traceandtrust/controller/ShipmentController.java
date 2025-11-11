@@ -44,6 +44,15 @@ public class ShipmentController {
         return ResponseEntity.ok(dispatchedShipment);
     }
 
+    @PatchMapping("/{shipmentId}/deliver")
+    public ResponseEntity<ShipmentDto> markAsDelivered(
+            @PathVariable UUID shipmentId,
+            @RequestHeader("X-Actor-ID") UUID actorId) {
+
+        ShipmentDto deliveredShipment = shipmentService.markShipmentAsDelivered(shipmentId, actorId);
+        return ResponseEntity.ok(deliveredShipment);
+    }
+
 
 
 

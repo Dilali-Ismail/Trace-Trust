@@ -80,6 +80,7 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .map(shipmentMapper::toDto)
                 .collect(Collectors.toList());
     }
+
     @Transactional
    public ShipmentDto dispatchShipment(UUID shipmentId, UUID actorId){
        checkWarehouseManagerOrAdminRole(actorId);
@@ -103,6 +104,28 @@ public class ShipmentServiceImpl implements ShipmentService {
         Shipment savedShipment = shipmentRepository.save(shipment);
         return shipmentMapper.toDto(savedShipment);
    }
+
+    public ShipmentDto markShipmentAsDelivered(UUID shipmentId, UUID actorId){
+        checkWarehouseManagerOrAdminRole(actorId);
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
+        if (shipment.getStatus() != ShipmentStatus.IN_TRANSIT) {
+            throw new BusinessException("Shipment can only be marked as delivered if its status is IN_TRANSIT.");
+        }
+
+        SalesOrder salesOrder = shipment.getSalesOrder();
+
+        shipment.setStatus(ShipmentStatus.DELIVERED);
+        shipment.setDeliveredAt(Instant.now());
+
+        salesOrder.setStatus(SalesOrderStatus.DELIVERED);
+        salesOrderRepository.save(salesOrder);
+
+        Shipment savedShipment = shipmentRepository.save(shipment);
+        return shipmentMapper.toDto(savedShipment);
+
+
+    }
     private void checkWarehouseManagerOrAdminRole(UUID actorId){
         User actor = userRepository.findById(actorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
