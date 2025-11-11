@@ -11,4 +11,5 @@ public interface ShipmentService {
     ShipmentDto createShipment(CreateShipmentRequest request, UUID actorId);
     ShipmentDto dispatchShipment(UUID shipmentId, UUID actorId);
     List<ShipmentDto> getAllShipments(UUID actorId);
+    ShipmentDto markShipmentAsDelivered(UUID shipmentId, UUID actorId);
 }
