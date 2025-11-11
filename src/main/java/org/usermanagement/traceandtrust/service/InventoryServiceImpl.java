@@ -12,9 +12,11 @@ import org.usermanagement.traceandtrust.enums.Role;
 import org.usermanagement.traceandtrust.exception.BusinessException;
 import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
 import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
+import org.usermanagement.traceandtrust.exception.StockUnavailableException;
 import org.usermanagement.traceandtrust.mapper.InventoryMapper;
 import org.usermanagement.traceandtrust.repository.*;
 
+import java.util.List;
 import java.util.UUID;
 @Service
 @RequiredArgsConstructor
@@ -39,7 +41,6 @@ public class InventoryServiceImpl implements InventoryService{
                 .orElseGet(()-> Inventory.builder()
                         .product(product)
                         .warehouse(warehouse)
-                        .quantity_hand(request.getQuantity())
                         .build());
 
         switch(request.getType()){
@@ -73,6 +74,45 @@ public class InventoryServiceImpl implements InventoryService{
          inventoryMovement.save(movement);
          return inventoryMapper.toDto(savedInventory);
    }
+    //reserver commande
+    public void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
+        checkAdminRole(actorId);
+
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
+        for (SalesOrderLine line : orderLines) {
+            Product product = line.getProduct();
+            int quantityToReserve = line.getQuantity();
+            Inventory inventory = inventoryRepository.findByProductAndWarehouse(product, warehouse)
+                    .orElseThrow(() -> new StockUnavailableException("No stock available for product " + product.getSku()));
+
+            long availableStock = inventory.getQuantity_hand() - inventory.getQuantity_reserved();
+            if (availableStock < quantityToReserve) {
+                throw new StockUnavailableException(
+                        "Insufficient stock for product " + product.getSku() +
+                                ". Required: " + quantityToReserve + ", Available: " + availableStock
+                );
+            }
+            inventory.setQuantity_reserved(inventory.getQuantity_reserved() + quantityToReserve);
+            inventoryRepository.save(inventory);
+        }
+    }
+    //reserver
+    @Transactional
+    public void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
+        checkAdminRole(actorId);
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
+        for (SalesOrderLine line : orderLines) {
+            Product product = line.getProduct();
+            int quantityToRelease = line.getQuantity();
+            inventoryRepository.findByProductAndWarehouse(product, warehouse).ifPresent(inventory -> {
+                long newReservedQty = inventory.getQuantity_reserved() - quantityToRelease;
+                inventory.setQuantity_reserved(Math.max(0, newReservedQty));
+                inventoryRepository.save(inventory);
+            });
+        }
+    }
     private void checkAdminRole(UUID actorId) {
         User actor = userRepository.findById(actorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));

@@ -77,7 +77,6 @@ public class ProductServiceImpl implements ProductService {
         productToDelete.setActive(false);
         productRepository.save(productToDelete);
 
-
     }
 
     private void checkAdminRole(UUID actorId) {
@@ -88,6 +87,5 @@ public class ProductServiceImpl implements ProductService {
             throw new ForbiddenAccessException("This action can only be performed by an ADMIN user.");
         }
     }
-
 
 }
