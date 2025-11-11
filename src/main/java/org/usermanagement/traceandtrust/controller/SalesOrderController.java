@@ -27,5 +27,12 @@ public class SalesOrderController {
         SalesOrderDto createdOrder = salesOrderService.createSalesOrder(request, actorId);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
     }
-
+    @PostMapping("/{orderId}/reserve")
+    public ResponseEntity<SalesOrderDto>reserveOrder(
+            @PathVariable UUID orderId,
+            @RequestHeader("X-Actor-ID") UUID actorId
+    ){
+        SalesOrderDto reservedOrder = salesOrderService.reserveOrder(orderId, actorId);
+        return ResponseEntity.ok(reservedOrder);
+    }
 }

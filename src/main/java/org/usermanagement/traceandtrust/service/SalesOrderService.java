@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface SalesOrderService {
     SalesOrderDto createSalesOrder(CreateSalesOrderRequest request, UUID actorId);
+    SalesOrderDto reserveOrder(UUID orderId, UUID actorId);
 }

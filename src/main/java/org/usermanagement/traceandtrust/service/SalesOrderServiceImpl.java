@@ -27,6 +27,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final SalesOrderMapper salesOrderMapper;
+    private final InventoryService inventoryService;
 
     public SalesOrderDto createSalesOrder(CreateSalesOrderRequest request, UUID actorId){
 
@@ -60,6 +61,22 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         return salesOrderMapper.toDto(savedOrder);
 
     }
+
+    public SalesOrderDto reserveOrder(UUID orderId, UUID actorId){
+        SalesOrder salesOrder = salesOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
+
+        if (salesOrder.getStatus() != SalesOrderStatus.CREATED) {
+            throw new BusinessException("Only orders with CREATED status can be reserved. Current status: " + salesOrder.getStatus());
+        }
+
+        inventoryService.reserveStock(salesOrder.getOrderLines(),salesOrder.getWarehouse().getId(),actorId);
+        salesOrder.setStatus(SalesOrderStatus.RESERVED);
+        SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+        return salesOrderMapper.toDto(savedOrder);
+
+    }
+
     private User checkClientRole(UUID actorId) {
         User actor = userRepository.findById(actorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
