@@ -32,7 +32,6 @@ public class CarrierServiceImpl implements CarrierService {
     }
     @Override
     public List<CarrierDto> getAllCarriers(UUID actorId) {
-        // La consultation pourrait être ouverte à d'autres rôles, mais on la restreint pour l'instant
         checkAdminRole(actorId);
         return carrierRepository.findAll().stream().map(carrierMapper::toDto).collect(Collectors.toList());
     }

@@ -75,7 +75,7 @@ public class InventoryServiceImpl implements InventoryService{
          inventoryMovement.save(movement);
          return inventoryMapper.toDto(savedInventory);
    }
-    //reserver commande
+
     public void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
         checkAdminRole(actorId);
 
@@ -94,11 +94,11 @@ public class InventoryServiceImpl implements InventoryService{
                                 ". Required: " + quantityToReserve + ", Available: " + availableStock
                 );
             }
+
             inventory.setQuantity_reserved(inventory.getQuantity_reserved() + quantityToReserve);
             inventoryRepository.save(inventory);
         }
     }
-    //reserver
     @Transactional
     public void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
         checkAdminRole(actorId);
