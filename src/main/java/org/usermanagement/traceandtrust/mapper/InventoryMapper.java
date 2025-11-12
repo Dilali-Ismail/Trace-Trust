@@ -21,5 +21,4 @@ public interface InventoryMapper {
         dto.setAvailable(inventory.getQuantity_hand() - inventory.getQuantity_reserved());
     }
 
-
 }
