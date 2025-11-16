@@ -54,7 +54,7 @@ pipeline {
         stage('🔍 SonarQube Analysis') {
             steps {
                 echo '🔍 Analyse SonarQube...'
-                withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('sonarQube') {
                     sh '''
                         mvn sonar:sonar \
                         -Dsonar.projectKey=trace-and-trust \
