@@ -6,4 +6,5 @@ import org.usermanagement.traceandtrust.entity.Carrier;
 import java.util.UUID;
 
 public interface CarrierRepository extends JpaRepository<Carrier, UUID> {
+    Object existsByName(String s);
 }
