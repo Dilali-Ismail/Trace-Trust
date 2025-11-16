@@ -30,6 +30,22 @@
         <java.version>17</java.version>
         <spring-modulith.version>1.4.4</spring-modulith.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
+
+        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <jacoco-maven-plugin.version>0.8.11</jacoco-maven-plugin.version>
+        <sonar.organization>votre-organisation</sonar.organization>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+
+        <!-- EXCLUSIONS JACOCO -->
+        <sonar.coverage.exclusions>
+            **/dto/**,
+            **/entity/**,
+            **/enums/**,
+            **/mapper/**/*Impl.java,
+            **/TraceAndTrustApplication.java,
+            **/exception/ApiError.java
+        </sonar.coverage.exclusions>
+
     </properties>
     <dependencies>
         <dependency>
@@ -104,9 +120,28 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>24.0.1</version>
             <scope>compile</scope>
         </dependency>
+        <!-- H2 pour les tests en mémoire -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Mockito pour les mocks -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- AssertJ pour des assertions lisibles -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -122,18 +157,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -176,7 +199,100 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!-- PLUGIN SUREFIRE POUR EXÉCUTER LES TESTS -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                    <argLine>@{argLine} -Xmx1024m</argLine>
+                </configuration>
+            </plugin>
+            <!-- PLUGIN JACOCO POUR LA COUVERTURE DE CODE -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <!-- Préparation de l'agent JaCoCo -->
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Génération du rapport après les tests -->
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Vérification des seuils de couverture -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <!-- EXCLUSIONS DES PACKAGES NON TESTABLES -->
+                            <excludes>
+                                <exclude>**/dto/**</exclude>
+                                <exclude>**/entity/**</exclude>
+                                <exclude>**/enums/**</exclude>
+                                <exclude>**/mapper/**</exclude>
+                                <exclude>**/controller/**</exclude>
+                                <exclude>**/aspect/**</exclude>
+                                <exclude>**/config/**</exclude>
+                                <exclude>**/exception/ApiError.class</exclude>
+                                <exclude>**/TraceAndTrustApplication.class</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+
+                <!-- EXCLUSIONS POUR JACOCO -->
+                <configuration>
+                    <excludes>
+                        <!-- Exclure les DTOs -->
+                        <exclude>**/dto/**/*</exclude>
+                        <!-- Exclure les entities -->
+                        <exclude>**/entity/**/*</exclude>
+                        <!-- Exclure les enums -->
+                        <exclude>**/enums/**/*</exclude>
+                        <!-- Exclure les mappers générés par MapStruct -->
+                        <exclude>**/mapper/**/*Impl.class</exclude>
+                        <!-- Exclure la classe principale -->
+                        <exclude>**/TraceAndTrustApplication.class</exclude>
+                        <!-- Exclure ApiError -->
+                        <exclude>**/exception/ApiError.class</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>3.10.0.2594</version>
+            </plugin>
         </plugins>
     </build>
-
 </project>
