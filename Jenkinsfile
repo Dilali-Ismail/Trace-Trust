@@ -21,21 +21,21 @@ pipeline {
         stage('🧹 Clean') {
             steps {
                 echo '🧹 Nettoyage du projet...'
-                bat 'mvn clean'
+                sh 'mvn clean'
             }
         }
 
         stage('🔨 Build') {
             steps {
                 echo '🔨 Compilation du projet...'
-                bat 'mvn compile'
+                sh 'mvn compile'
             }
         }
 
         stage('🧪 Tests') {
             steps {
                 echo '🧪 Exécution des tests unitaires...'
-                bat 'mvn test'
+                sh 'mvn test'
             }
             post {
                 always {
@@ -47,7 +47,7 @@ pipeline {
         stage('📊 JaCoCo Report') {
             steps {
                 echo '📊 Génération du rapport de couverture...'
-                bat 'mvn jacoco:report'
+                sh 'mvn jacoco:report'
             }
         }
 
@@ -55,13 +55,13 @@ pipeline {
             steps {
                 echo '🔍 Analyse SonarQube...'
                 withSonarQubeEnv('SonarQube') {
-                    bat """
-                        mvn sonar:sonar ^
-                        -Dsonar.projectKey=trace-and-trust ^
-                        -Dsonar.projectName="Trace and Trust API" ^
-                        -Dsonar.host.url=http://host.docker.internal:9000 ^
-                        -Dsonar.token=%SONAR_TOKEN%
-                    """
+                    sh '''
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=trace-and-trust \
+                        -Dsonar.projectName="Trace and Trust API" \
+                        -Dsonar.host.url=http://host.docker.internal:9000 \
+                        -Dsonar.token=${SONAR_TOKEN}
+                    '''
                 }
             }
         }
@@ -78,7 +78,7 @@ pipeline {
         stage('📦 Package') {
             steps {
                 echo '📦 Création du JAR...'
-                bat 'mvn package -DskipTests'
+                sh 'mvn package -DskipTests'
             }
         }
 
