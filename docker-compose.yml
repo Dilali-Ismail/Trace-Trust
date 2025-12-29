@@ -38,11 +38,13 @@ services:
       KC_DB_URL: jdbc:postgresql://db:5432/keycloak
       KC_DB_USERNAME: admin
       KC_DB_PASSWORD: password
-    command: start-dev
+    command: start-dev --import-realm
     ports:
       - "8080:8080"
     depends_on:
       - db
+    volumes:
+      - ./keycloak/logistics-realm.json:/opt/keycloak/data/import/realm.json
 
 
   pgadmin:
