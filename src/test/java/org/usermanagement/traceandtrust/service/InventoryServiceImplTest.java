@@ -153,7 +153,7 @@ class InventoryServiceImplTest {
         when(inventoryMapper.toDto(any(Inventory.class))).thenReturn(inventoryDto);
 
         // ACT
-        InventoryDto result = inventoryService.recordMovement(movementRequest, warehouseManagerId);
+        InventoryDto result = inventoryService.recordMovement(movementRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -186,7 +186,7 @@ class InventoryServiceImplTest {
         when(inventoryMapper.toDto(any(Inventory.class))).thenReturn(inventoryDto);
 
         // ACT
-        InventoryDto result = inventoryService.recordMovement(movementRequest, warehouseManagerId);
+        InventoryDto result = inventoryService.recordMovement(movementRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -213,7 +213,7 @@ class InventoryServiceImplTest {
         when(inventoryMapper.toDto(any(Inventory.class))).thenReturn(inventoryDto);
 
         // ACT
-        InventoryDto result = inventoryService.recordMovement(movementRequest, warehouseManagerId);
+        InventoryDto result = inventoryService.recordMovement(movementRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -235,7 +235,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.of(inventory));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Adjustment quantity cannot be a negative value");
 
@@ -256,7 +256,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.of(inventory));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("new quantity on hand cannot be less than reserved quantity");
 
@@ -270,7 +270,7 @@ class InventoryServiceImplTest {
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest, adminId))
+        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("WAREHOUSE_MANAGER");
 
@@ -285,7 +285,7 @@ class InventoryServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.recordMovement(movementRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product not found");
 
@@ -312,7 +312,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.save(any(Inventory.class))).thenReturn(inventory);
 
         // ACT
-        inventoryService.reserveStock(orderLines, warehouseId, warehouseManagerId);
+        inventoryService.reserveStock(orderLines, warehouseId);
 
         // ASSERT
         assertThat(inventory.getQuantity_reserved()).isEqualTo(50L); // 20 + 30
@@ -335,7 +335,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.of(inventory));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.reserveStock(orderLines, warehouseId, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.reserveStock(orderLines, warehouseId))
                 .isInstanceOf(StockUnavailableException.class)
                 .hasMessageContaining("Insufficient stock");
 
@@ -357,7 +357,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.reserveStock(orderLines, warehouseId, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.reserveStock(orderLines, warehouseId))
                 .isInstanceOf(StockUnavailableException.class)
                 .hasMessageContaining("No stock available");
 
@@ -384,7 +384,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.save(any(Inventory.class))).thenReturn(inventory);
 
         // ACT
-        inventoryService.releaseStock(orderLines, warehouseId, warehouseManagerId);
+        inventoryService.releaseStock(orderLines, warehouseId);
 
         // ASSERT
         assertThat(inventory.getQuantity_reserved()).isEqualTo(10L); // 20 - 10
@@ -410,7 +410,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.save(any(Inventory.class))).thenReturn(inventory);
 
         // ACT
-        inventoryService.releaseStock(orderLines, warehouseId, warehouseManagerId);
+        inventoryService.releaseStock(orderLines, warehouseId);
 
         // ASSERT
         assertThat(inventory.getQuantity_reserved()).isEqualTo(0L); // Math.max(0, 5-10)
@@ -439,7 +439,7 @@ class InventoryServiceImplTest {
         when(inventoryMovement.save(any(InventoryMovement.class))).thenReturn(null);
 
         // ACT
-        inventoryService.dispatchStock(orderLines, warehouseId, warehouseManagerId);
+        inventoryService.dispatchStock(orderLines, warehouseId);
 
         // ASSERT
         assertThat(inventory.getQuantity_hand()).isEqualTo(85L); // 100 - 15
@@ -464,7 +464,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.of(inventory));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.dispatchStock(orderLines, warehouseId, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.dispatchStock(orderLines, warehouseId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Inconsistent stock levels");
 
@@ -486,7 +486,7 @@ class InventoryServiceImplTest {
         when(inventoryRepository.findByProductAndWarehouse(product, warehouse)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> inventoryService.dispatchStock(orderLines, warehouseId, warehouseManagerId))
+        assertThatThrownBy(() -> inventoryService.dispatchStock(orderLines, warehouseId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Inventory record not found");
 

@@ -164,7 +164,7 @@ class ShipmentServiceImplTest {
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        ShipmentDto result = shipmentService.createShipment(createRequest, warehouseManagerId);
+        ShipmentDto result = shipmentService.createShipment(createRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -189,7 +189,7 @@ class ShipmentServiceImplTest {
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        ShipmentDto result = shipmentService.createShipment(createRequest, adminId);
+        ShipmentDto result = shipmentService.createShipment(createRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -207,7 +207,7 @@ class ShipmentServiceImplTest {
         when(carrierRepository.findById(carrierId)).thenReturn(Optional.of(carrier));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("RESERVED status");
 
@@ -225,7 +225,7 @@ class ShipmentServiceImplTest {
         when(carrierRepository.findById(carrierId)).thenReturn(Optional.of(carrier));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("inactive carrier");
 
@@ -242,7 +242,7 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.existsBySalesOrderId(salesOrderId)).thenReturn(true);
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("shipment already exists");
 
@@ -256,7 +256,7 @@ class ShipmentServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, userId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("WAREHOUSE_MANAGER or ADMIN");
 
@@ -271,7 +271,7 @@ class ShipmentServiceImplTest {
         when(salesOrderRepository.findById(salesOrderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Sales Order not found");
 
@@ -287,7 +287,7 @@ class ShipmentServiceImplTest {
         when(carrierRepository.findById(carrierId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.createShipment(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.createShipment(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Carrier not found");
 
@@ -313,7 +313,7 @@ class ShipmentServiceImplTest {
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        List<ShipmentDto> results = shipmentService.getAllShipments(warehouseManagerId);
+        List<ShipmentDto> results = shipmentService.getAllShipments();
 
         // ASSERT
         assertThat(results).isNotNull();
@@ -333,13 +333,13 @@ class ShipmentServiceImplTest {
         // ARRANGE
         when(userRepository.findById(warehouseManagerId)).thenReturn(Optional.of(warehouseManager));
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(shipment));
-        doNothing().when(inventoryService).dispatchStock(any(), any(), any());
+        doNothing().when(inventoryService).dispatchStock(any(), any());
         when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
         when(shipmentRepository.save(any(Shipment.class))).thenReturn(shipment);
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        ShipmentDto result = shipmentService.dispatchShipment(shipmentId, warehouseManagerId);
+        ShipmentDto result = shipmentService.dispatchShipment(shipmentId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -347,7 +347,7 @@ class ShipmentServiceImplTest {
         assertThat(shipment.getShippedAt()).isNotNull();
         assertThat(salesOrder.getStatus()).isEqualTo(SalesOrderStatus.SHIPPED);
 
-        verify(inventoryService, times(1)).dispatchStock(any(), eq(warehouseId), eq(warehouseManagerId));
+        verify(inventoryService, times(1)).dispatchStock(any(), eq(warehouseId));
         verify(shipmentRepository, times(1)).save(shipment);
         verify(salesOrderRepository, times(1)).save(salesOrder);
     }
@@ -362,11 +362,11 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(shipment));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("status is PLANNED");
 
-        verify(inventoryService, never()).dispatchStock(any(), any(), any());
+        verify(inventoryService, never()).dispatchStock(any(), any());
         verify(shipmentRepository, never()).save(any(Shipment.class));
     }
 
@@ -378,11 +378,11 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Shipment not found");
 
-        verify(inventoryService, never()).dispatchStock(any(), any(), any());
+        verify(inventoryService, never()).dispatchStock(any(), any());
     }
 
     // ============================================
@@ -402,7 +402,7 @@ class ShipmentServiceImplTest {
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        ShipmentDto result = shipmentService.markShipmentAsDelivered(shipmentId, warehouseManagerId);
+        ShipmentDto result = shipmentService.markShipmentAsDelivered(shipmentId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -424,7 +424,7 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(shipment));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.markShipmentAsDelivered(shipmentId, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.markShipmentAsDelivered(shipmentId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("IN_TRANSIT");
 
@@ -439,7 +439,7 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.markShipmentAsDelivered(shipmentId, warehouseManagerId))
+        assertThatThrownBy(() -> shipmentService.markShipmentAsDelivered(shipmentId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Shipment not found");
 

@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface CarrierService {
-    CarrierDto createCarrier(CreateCarrierRequest request, UUID actorId);
-    List<CarrierDto> getAllCarriers(UUID actorId);
+    CarrierDto createCarrier(CreateCarrierRequest request);
+    List<CarrierDto> getAllCarriers();
 }

@@ -111,7 +111,7 @@ public class SupplierServiceImplTest {
         when(supplierMapper.toDto(any(Supplier.class))).thenReturn(supplierDto);
 
         // ========== ACT (When) ==========
-        SupplierDto result = supplierService.createSupplier(createRequest, adminId);
+        SupplierDto result = supplierService.createSupplier(createRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -139,7 +139,7 @@ public class SupplierServiceImplTest {
         when(supplierRepository.findByName("Acme Corporation")).thenReturn(Optional.of(supplier));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> supplierService.createSupplier(createRequest, adminId))
+        assertThatThrownBy(() -> supplierService.createSupplier(createRequest))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("Supplier with name 'Acme Corporation' already exists");
 
@@ -156,7 +156,7 @@ public class SupplierServiceImplTest {
         when(userRepository.findById(nonAdminId)).thenReturn(Optional.of(nonAdminUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> supplierService.createSupplier(createRequest, nonAdminId))
+        assertThatThrownBy(() -> supplierService.createSupplier(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -173,7 +173,7 @@ public class SupplierServiceImplTest {
         when(userRepository.findById(unknownUserId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> supplierService.createSupplier(createRequest, unknownUserId))
+        assertThatThrownBy(() -> supplierService.createSupplier(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found with id: " + unknownUserId);
 
@@ -210,7 +210,7 @@ public class SupplierServiceImplTest {
         when(supplierMapper.toDto(supplier2)).thenReturn(supplierDto2);
 
         // ========== ACT (When) ==========
-        List<SupplierDto> results = supplierService.getAllSuppliers(adminId);
+        List<SupplierDto> results = supplierService.getAllSuppliers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -232,7 +232,7 @@ public class SupplierServiceImplTest {
         when(userRepository.findById(nonAdminId)).thenReturn(Optional.of(nonAdminUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> supplierService.getAllSuppliers(nonAdminId))
+        assertThatThrownBy(() -> supplierService.getAllSuppliers())
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -248,7 +248,7 @@ public class SupplierServiceImplTest {
         when(supplierRepository.findAll()).thenReturn(Arrays.asList());
 
         // ========== ACT (When) ==========
-        List<SupplierDto> results = supplierService.getAllSuppliers(adminId);
+        List<SupplierDto> results = supplierService.getAllSuppliers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -266,7 +266,7 @@ public class SupplierServiceImplTest {
         when(userRepository.findById(unknownUserId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> supplierService.getAllSuppliers(unknownUserId))
+        assertThatThrownBy(() -> supplierService.getAllSuppliers())
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found with id: " + unknownUserId);
 

@@ -129,7 +129,7 @@ public class ProductServiceImplTest {
         when(productMapper.toDto(any(Product.class))).thenReturn(productDto);
 
         // ========== ACT (When) ==========
-        ProductDto result = productService.createProduct(createRequest, userId);
+        ProductDto result = productService.createProduct(createRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -155,7 +155,7 @@ public class ProductServiceImplTest {
         when(productRepository.findBySku("PROD-001")).thenReturn(Optional.of(product));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.createProduct(createRequest, userId))
+        assertThatThrownBy(() -> productService.createProduct(createRequest))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("Product with SKU 'PROD-001' already exists");
 
@@ -172,7 +172,7 @@ public class ProductServiceImplTest {
         when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.createProduct(createRequest, unknownId))
+        assertThatThrownBy(() -> productService.createProduct(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor user with ID")
                 .hasMessageContaining(unknownId.toString());
@@ -214,7 +214,7 @@ public class ProductServiceImplTest {
         when(productMapper.toDto(product2)).thenReturn(productDto2);
 
         // ========== ACT (When) ==========
-        List<ProductDto> results = productService.getAllProducts(adminId);
+        List<ProductDto> results = productService.getAllProducts();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -234,7 +234,7 @@ public class ProductServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.getAllProducts(userId))
+        assertThatThrownBy(() -> productService.getAllProducts())
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -255,7 +255,7 @@ public class ProductServiceImplTest {
         when(productMapper.toDto(product)).thenReturn(productDto);
 
         // ========== ACT (When) ==========
-        ProductDto result = productService.getProductById(productId, adminId);
+        ProductDto result = productService.getProductById(productId);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -276,7 +276,7 @@ public class ProductServiceImplTest {
         when(productRepository.findByIdAndActiveTrue(productId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.getProductById(productId, adminId))
+        assertThatThrownBy(() -> productService.getProductById(productId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product with ID")
                 .hasMessageContaining(productId.toString());
@@ -292,7 +292,7 @@ public class ProductServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.getProductById(productId, userId))
+        assertThatThrownBy(() -> productService.getProductById(productId))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -330,7 +330,7 @@ public class ProductServiceImplTest {
         when(productMapper.toDto(any(Product.class))).thenReturn(updatedDto);
 
         // ========== ACT (When) ==========
-        ProductDto result = productService.updateProduct(productId, updateRequest, adminId);
+        ProductDto result = productService.updateProduct(productId, updateRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -353,7 +353,7 @@ public class ProductServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.updateProduct(productId, updateRequest, adminId))
+        assertThatThrownBy(() -> productService.updateProduct(productId, updateRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product with ID")
                 .hasMessageContaining(productId.toString());
@@ -370,7 +370,7 @@ public class ProductServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.updateProduct(productId, updateRequest, userId))
+        assertThatThrownBy(() -> productService.updateProduct(productId, updateRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -392,7 +392,7 @@ public class ProductServiceImplTest {
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
         // ========== ACT (When) ==========
-        productService.deleteProduct(productId, adminId);
+        productService.deleteProduct(productId);
 
         // ========== ASSERT (Then) ==========
         verify(userRepository, times(1)).findById(adminId);
@@ -411,7 +411,7 @@ public class ProductServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.deleteProduct(productId, adminId))
+        assertThatThrownBy(() -> productService.deleteProduct(productId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product with ID")
                 .hasMessageContaining(productId.toString());
@@ -428,7 +428,7 @@ public class ProductServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> productService.deleteProduct(productId, userId))
+        assertThatThrownBy(() -> productService.deleteProduct(productId))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 

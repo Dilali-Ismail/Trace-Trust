@@ -1,6 +1,7 @@
 package org.usermanagement.traceandtrust.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateUserRequest;
 import org.usermanagement.traceandtrust.dto.LoginRequest;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDto register(CreateUserRequest request) {
@@ -32,6 +34,8 @@ public class UserServiceImpl implements UserService {
         });
 
         User user = userMapper.toEntity(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setEnabled(true); 
         User saveUser = userRepository.save(user);
         return userMapper.toDto(saveUser);
     }
@@ -39,20 +43,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User with email  not found."));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AuthenticationException("Invalid password.");
         }
-
         return userMapper.toDto(user);
 
     }
 
-    public List<UserDto> getAllUsers(UUID actorId){
-        User actor = userRepository.findById(actorId).orElseThrow(()-> new ResourceNotFoundException("Actor not found"));
+    public List<UserDto> getAllUsers(){
 
-        if(!actor.getRole().equals(Role.ADMIN)){
-            throw new ForbiddenAccessException("Only an ADMIN can view the list of all users.");
-        }
         return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
     }
 }

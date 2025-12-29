@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CarrierDto;
 import org.usermanagement.traceandtrust.dto.CreateCarrierRequest;
@@ -19,13 +20,15 @@ public class CarrierController {
     private final CarrierService carrierService;
 
     @PostMapping
-    public ResponseEntity<CarrierDto> createCarrier(@RequestHeader("X-Actor-ID") UUID actorId, @Valid @RequestBody CreateCarrierRequest request) {
-        return new ResponseEntity<>(carrierService.createCarrier(request, actorId), HttpStatus.CREATED);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CarrierDto> createCarrier( @Valid @RequestBody CreateCarrierRequest request) {
+        return new ResponseEntity<>(carrierService.createCarrier(request), HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<CarrierDto>> getAllCarriers(@RequestHeader("X-Actor-ID") UUID actorId) {
-        return ResponseEntity.ok(carrierService.getAllCarriers(actorId));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CarrierDto>> getAllCarriers() {
+        return ResponseEntity.ok(carrierService.getAllCarriers());
     }
 
 }

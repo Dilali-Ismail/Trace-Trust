@@ -3,6 +3,8 @@ package org.usermanagement.traceandtrust.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateShipmentRequest;
 import org.usermanagement.traceandtrust.dto.ShipmentDto;
@@ -35,13 +37,12 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final SalesOrderRepository salesOrderRepository;
     private final CarrierRepository carrierRepository;
-    private final UserRepository userRepository;
     private final ShipmentMapper shipmentMapper;
     private final InventoryService inventoryService;
 
-    public  ShipmentDto createShipment(CreateShipmentRequest request, UUID actorId){
+    public  ShipmentDto createShipment(CreateShipmentRequest request){
 
-       checkWarehouseManagerOrAdminRole(actorId);
+
 
        SalesOrder salesOrder = salesOrderRepository.findById(request.getSalesOrderId())
                .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + request.getSalesOrderId()));
@@ -73,8 +74,15 @@ public class ShipmentServiceImpl implements ShipmentService {
    }
 
     @Override
-    public List<ShipmentDto> getAllShipments(UUID actorId) {
-        checkWarehouseManagerOrAdminRole(actorId);
+    public List<ShipmentDto> getAllShipments() {
+        String role = getCurrentUserRole();
+        String email = getCurrentUserEmail();
+
+        if ("ROLE_CLIENT".equals(role)) {
+            return shipmentRepository.findAllBySalesOrderClientEmail(email).stream()
+                    .map(shipmentMapper::toDto)
+                    .collect(Collectors.toList());
+        }
 
         return shipmentRepository.findAll().stream()
                 .map(shipmentMapper::toDto)
@@ -82,8 +90,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     }
 
     @Transactional
-   public ShipmentDto dispatchShipment(UUID shipmentId, UUID actorId){
-       checkWarehouseManagerOrAdminRole(actorId);
+   public ShipmentDto dispatchShipment(UUID shipmentId){
 
        Shipment shipment = shipmentRepository.findById(shipmentId)
                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
@@ -93,7 +100,7 @@ public class ShipmentServiceImpl implements ShipmentService {
        }
 
        SalesOrder salesOrder = shipment.getSalesOrder();
-       inventoryService.dispatchStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId(), actorId);
+       inventoryService.dispatchStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId());
 
        shipment.setStatus(ShipmentStatus.IN_TRANSIT);
        shipment.setShippedAt(Instant.now());
@@ -105,8 +112,7 @@ public class ShipmentServiceImpl implements ShipmentService {
         return shipmentMapper.toDto(savedShipment);
    }
 
-    public ShipmentDto markShipmentAsDelivered(UUID shipmentId, UUID actorId){
-        checkWarehouseManagerOrAdminRole(actorId);
+    public ShipmentDto markShipmentAsDelivered(UUID shipmentId){
         Shipment shipment = shipmentRepository.findById(shipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
         if (shipment.getStatus() != ShipmentStatus.IN_TRANSIT) {
@@ -126,11 +132,13 @@ public class ShipmentServiceImpl implements ShipmentService {
 
 
     }
-    private void checkWarehouseManagerOrAdminRole(UUID actorId){
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.WAREHOUSE_MANAGER && actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This operation is restricted to WAREHOUSE_MANAGER or ADMIN users.");
-        }
+    private String getCurrentUserEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getName();
+    }
+
+    private String getCurrentUserRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().iterator().next().getAuthority();
     }
 }

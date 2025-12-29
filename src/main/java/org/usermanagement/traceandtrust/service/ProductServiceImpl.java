@@ -24,12 +24,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
     private final ProductMapper productMapper;
 
-    public ProductDto createProduct(CreateProductRequest request, UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
+    public ProductDto createProduct(CreateProductRequest request) {
+
         productRepository.findBySku(request.getSku()).ifPresent(product -> {
             throw new DuplicateResourceException("Product with SKU '" + request.getSku() + "' already exists.");
         });
@@ -38,17 +36,16 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDto(savedProduct);
     }
 
-    public List<ProductDto> getAllProducts(UUID actorId) {
-        checkAdminRole(actorId);
+    public List<ProductDto> getAllProducts() {
+
         return productRepository.findAllByActiveTrue()
                 .stream()
                 .map(productMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    public ProductDto getProductById(UUID productId, UUID actorId) {
+    public ProductDto getProductById(UUID productId) {
 
-        checkAdminRole(actorId);
         Product product = productRepository.findByIdAndActiveTrue(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
         return productMapper.toDto(product);
@@ -56,8 +53,7 @@ public class ProductServiceImpl implements ProductService {
 
     }
 
-    public ProductDto updateProduct(UUID productId, UpdateProductRequest request, UUID actorId){
-        checkAdminRole(actorId);
+    public ProductDto updateProduct(UUID productId, UpdateProductRequest request){
         Product productToUpdate = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
         productToUpdate.setName(request.getName());
@@ -70,8 +66,7 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toDto(updatedProduct);
 
     }
-    public void deleteProduct(UUID productId, UUID actorId){
-        checkAdminRole(actorId);
+    public void deleteProduct(UUID productId){
         Product productToDelete = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found."));
         productToDelete.setActive(false);
@@ -79,13 +74,5 @@ public class ProductServiceImpl implements ProductService {
 
     }
 
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
-
-        if (actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This action can only be performed by an ADMIN user.");
-        }
-    }
 
 }

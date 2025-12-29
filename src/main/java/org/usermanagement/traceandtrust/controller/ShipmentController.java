@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CreateShipmentRequest;
 import org.usermanagement.traceandtrust.dto.ShipmentDto;
@@ -21,35 +22,36 @@ public class ShipmentController {
     private final ShipmentService shipmentService;
 
     @PostMapping
+    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")
     public ResponseEntity<ShipmentDto> createShipment(
-            @RequestHeader("X-Actor-ID") UUID actorId,
             @Valid @RequestBody CreateShipmentRequest request) {
 
-        ShipmentDto createdShipment = shipmentService.createShipment(request, actorId);
+        ShipmentDto createdShipment = shipmentService.createShipment(request);
         return new ResponseEntity<>(createdShipment, HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<ShipmentDto>> getAllShipments(@RequestHeader("X-Actor-ID") UUID actorId) {
-        List<ShipmentDto> shipments = shipmentService.getAllShipments(actorId);
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ShipmentDto>> getAllShipments() {
+        List<ShipmentDto> shipments = shipmentService.getAllShipments();
         return ResponseEntity.ok(shipments);
     }
 
     @PatchMapping("/{shipmentId}/dispatch")
+    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")
     public ResponseEntity<ShipmentDto> dispatchShipment(
-            @PathVariable UUID shipmentId,
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+            @PathVariable UUID shipmentId) {
 
-        ShipmentDto dispatchedShipment = shipmentService.dispatchShipment(shipmentId, actorId);
+        ShipmentDto dispatchedShipment = shipmentService.dispatchShipment(shipmentId);
         return ResponseEntity.ok(dispatchedShipment);
     }
 
     @PatchMapping("/{shipmentId}/deliver")
+    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")
     public ResponseEntity<ShipmentDto> markAsDelivered(
-            @PathVariable UUID shipmentId,
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+            @PathVariable UUID shipmentId) {
 
-        ShipmentDto deliveredShipment = shipmentService.markShipmentAsDelivered(shipmentId, actorId);
+        ShipmentDto deliveredShipment = shipmentService.markShipmentAsDelivered(shipmentId);
         return ResponseEntity.ok(deliveredShipment);
     }
 

@@ -8,8 +8,8 @@ import java.util.UUID;
 
 public interface ShipmentService {
 
-    ShipmentDto createShipment(CreateShipmentRequest request, UUID actorId);
-    ShipmentDto dispatchShipment(UUID shipmentId, UUID actorId);
-    List<ShipmentDto> getAllShipments(UUID actorId);
-    ShipmentDto markShipmentAsDelivered(UUID shipmentId, UUID actorId);
+    ShipmentDto createShipment(CreateShipmentRequest request);
+    ShipmentDto dispatchShipment(UUID shipmentId);
+    List<ShipmentDto> getAllShipments();
+    ShipmentDto markShipmentAsDelivered(UUID shipmentId);
 }

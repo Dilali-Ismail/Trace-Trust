@@ -123,7 +123,7 @@ public class WarehouseServiceImplTest {
         when(warehouseMapper.toDto(any(Warehouse.class))).thenReturn(warehouseDto);
 
         // ========== ACT (When) ==========
-        WarehouseDto result = warehouseService.createWarehouse(createRequest, adminId);
+        WarehouseDto result = warehouseService.createWarehouse(createRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -147,7 +147,7 @@ public class WarehouseServiceImplTest {
         when(warehouseRepository.findByCode("WH-001")).thenReturn(Optional.of(warehouse));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.createWarehouse(createRequest, adminId))
+        assertThatThrownBy(() -> warehouseService.createWarehouse(createRequest))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("Warehouse with code 'WH-001' already exists");
 
@@ -163,7 +163,7 @@ public class WarehouseServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.createWarehouse(createRequest, userId))
+        assertThatThrownBy(() -> warehouseService.createWarehouse(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -202,7 +202,7 @@ public class WarehouseServiceImplTest {
         when(warehouseMapper.toDto(warehouse2)).thenReturn(warehouseDto2);
 
         // ========== ACT (When) ==========
-        List<WarehouseDto> results = warehouseService.getAllWarehouses(adminId);
+        List<WarehouseDto> results = warehouseService.getAllWarehouses();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -224,7 +224,7 @@ public class WarehouseServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.getAllWarehouses(userId))
+        assertThatThrownBy(() -> warehouseService.getAllWarehouses())
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -245,7 +245,7 @@ public class WarehouseServiceImplTest {
         when(warehouseMapper.toDto(warehouse)).thenReturn(warehouseDto);
 
         // ========== ACT (When) ==========
-        WarehouseDto result = warehouseService.getWarehouseById(warehouseId, adminId);
+        WarehouseDto result = warehouseService.getWarehouseById(warehouseId);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -266,7 +266,7 @@ public class WarehouseServiceImplTest {
         when(warehouseRepository.findByIdAndActiveTrue(warehouseId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.getWarehouseById(warehouseId, adminId))
+        assertThatThrownBy(() -> warehouseService.getWarehouseById(warehouseId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Active warehouse with ID")
                 .hasMessageContaining(warehouseId.toString());
@@ -304,7 +304,7 @@ public class WarehouseServiceImplTest {
         when(warehouseMapper.toDto(any(Warehouse.class))).thenReturn(updatedDto);
 
         // ========== ACT (When) ==========
-        WarehouseDto result = warehouseService.updateWarehouse(warehouseId, updateRequest, adminId);
+        WarehouseDto result = warehouseService.updateWarehouse(warehouseId, updateRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -326,7 +326,7 @@ public class WarehouseServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.updateWarehouse(warehouseId, updateRequest, adminId))
+        assertThatThrownBy(() -> warehouseService.updateWarehouse(warehouseId, updateRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Warehouse with ID")
                 .hasMessageContaining(warehouseId.toString());
@@ -349,7 +349,7 @@ public class WarehouseServiceImplTest {
         when(warehouseRepository.save(any(Warehouse.class))).thenReturn(warehouse);
 
         // ========== ACT (When) ==========
-        warehouseService.deleteWarehouse(warehouseId, adminId);
+        warehouseService.deleteWarehouse(warehouseId);
 
         // ========== ASSERT (Then) ==========
         verify(userRepository, times(1)).findById(adminId);
@@ -368,7 +368,7 @@ public class WarehouseServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.deleteWarehouse(warehouseId, adminId))
+        assertThatThrownBy(() -> warehouseService.deleteWarehouse(warehouseId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Warehouse with ID")
                 .hasMessageContaining(warehouseId.toString());
@@ -385,7 +385,7 @@ public class WarehouseServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> warehouseService.deleteWarehouse(warehouseId, userId))
+        assertThatThrownBy(() -> warehouseService.deleteWarehouse(warehouseId))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 

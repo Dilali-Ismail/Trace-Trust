@@ -255,7 +255,7 @@ class UserServiceImplTest {
         when(userMapper.toDto(regularUser)).thenReturn(regularUserDto);
 
         // ========== ACT (When) ==========
-        List<UserDto> results = userService.getAllUsers(adminId);
+        List<UserDto> results = userService.getAllUsers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -277,7 +277,7 @@ class UserServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> userService.getAllUsers(userId))
+        assertThatThrownBy(() -> userService.getAllUsers())
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("ADMIN");
 
@@ -293,7 +293,7 @@ class UserServiceImplTest {
         when(userRepository.findAll()).thenReturn(Arrays.asList());
 
         // ========== ACT (When) ==========
-        List<UserDto> results = userService.getAllUsers(adminId);
+        List<UserDto> results = userService.getAllUsers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -311,7 +311,7 @@ class UserServiceImplTest {
         when(userRepository.findById(unknownId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> userService.getAllUsers(unknownId))
+        assertThatThrownBy(() -> userService.getAllUsers())
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found");
 

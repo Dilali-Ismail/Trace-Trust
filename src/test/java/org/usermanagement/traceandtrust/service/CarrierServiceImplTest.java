@@ -116,7 +116,7 @@ public class CarrierServiceImplTest {
         when(carrierMapper.toDto(any(Carrier.class))).thenReturn(carrierDto);
 
         // ========== ACT (When) ==========
-        CarrierDto result = carrierService.createCarrier(createRequest, adminId);
+        CarrierDto result = carrierService.createCarrier(createRequest);
 
         // ========== ASSERT (Then) ==========
         assertThat(result).isNotNull();
@@ -139,7 +139,7 @@ public class CarrierServiceImplTest {
         when(userRepository.findById(nonAdminId)).thenReturn(Optional.of(nonAdminUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> carrierService.createCarrier(createRequest, nonAdminId))
+        assertThatThrownBy(() -> carrierService.createCarrier(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -156,7 +156,7 @@ public class CarrierServiceImplTest {
         when(userRepository.findById(unknownUserId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> carrierService.createCarrier(createRequest, unknownUserId))
+        assertThatThrownBy(() -> carrierService.createCarrier(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found with id: " + unknownUserId);
 
@@ -191,7 +191,7 @@ public class CarrierServiceImplTest {
         when(carrierMapper.toDto(carrier2)).thenReturn(carrierDto2);
 
         // ========== ACT (When) ==========
-        List<CarrierDto> results = carrierService.getAllCarriers(adminId);
+        List<CarrierDto> results = carrierService.getAllCarriers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -213,7 +213,7 @@ public class CarrierServiceImplTest {
         when(userRepository.findById(nonAdminId)).thenReturn(Optional.of(nonAdminUser));
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> carrierService.getAllCarriers(nonAdminId))
+        assertThatThrownBy(() -> carrierService.getAllCarriers())
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -229,7 +229,7 @@ public class CarrierServiceImplTest {
         when(carrierRepository.findAll()).thenReturn(Arrays.asList());
 
         // ========== ACT (When) ==========
-        List<CarrierDto> results = carrierService.getAllCarriers(adminId);
+        List<CarrierDto> results = carrierService.getAllCarriers();
 
         // ========== ASSERT (Then) ==========
         assertThat(results).isNotNull();
@@ -247,7 +247,7 @@ public class CarrierServiceImplTest {
         when(userRepository.findById(unknownUserId)).thenReturn(Optional.empty());
 
         // ========== ACT & ASSERT (When & Then) ==========
-        assertThatThrownBy(() -> carrierService.getAllCarriers(unknownUserId))
+        assertThatThrownBy(() -> carrierService.getAllCarriers())
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found with id: " + unknownUserId);
 

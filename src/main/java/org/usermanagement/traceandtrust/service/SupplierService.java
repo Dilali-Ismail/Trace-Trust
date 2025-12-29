@@ -8,6 +8,6 @@ import java.util.UUID;
 
 public interface SupplierService {
 
-    SupplierDto createSupplier(CreateSupplierRequest request, UUID actorId);
-    List<SupplierDto> getAllSuppliers(UUID actorId);
+    SupplierDto createSupplier(CreateSupplierRequest request);
+    List<SupplierDto> getAllSuppliers();
 }

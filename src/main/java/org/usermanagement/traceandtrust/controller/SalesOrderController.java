@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
 import org.usermanagement.traceandtrust.dto.SalesOrderDto;
@@ -20,28 +21,28 @@ public class SalesOrderController {
     private final SalesOrderService salesOrderService;
 
     @PostMapping
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<SalesOrderDto> createSalesOrder(
-            @RequestHeader("X-Actor-ID") UUID actorId,
             @Valid @RequestBody CreateSalesOrderRequest request) {
 
-        SalesOrderDto createdOrder = salesOrderService.createSalesOrder(request, actorId);
+        SalesOrderDto createdOrder = salesOrderService.createSalesOrder(request);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
     }
     @PostMapping("/{orderId}/reserve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
     public ResponseEntity<SalesOrderDto>reserveOrder(
-            @PathVariable UUID orderId,
-            @RequestHeader("X-Actor-ID") UUID actorId
+            @PathVariable UUID orderId
     ){
-        SalesOrderDto reservedOrder = salesOrderService.reserveOrder(orderId, actorId);
+        SalesOrderDto reservedOrder = salesOrderService.reserveOrder(orderId);
         return ResponseEntity.ok(reservedOrder);
     }
 
     @PatchMapping("/{orderId}/cancel")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('CLIENT') and @ownershipService.isOrderOwner(#orderId, authentication.name))")
     public ResponseEntity<SalesOrderDto> cancelOrder(
-            @PathVariable UUID orderId,
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+            @PathVariable UUID orderId) {
 
-        SalesOrderDto canceledOrder = salesOrderService.cancelOrder(orderId, actorId);
+        SalesOrderDto canceledOrder = salesOrderService.cancelOrder(orderId);
         return ResponseEntity.ok(canceledOrder);
     }
 }

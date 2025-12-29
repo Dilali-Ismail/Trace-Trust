@@ -185,7 +185,7 @@ class PurchaseOrderServiceImplTest {
         when(purchaseOrderMapper.toDto(any(PurchaseOrder.class))).thenReturn(purchaseOrderDto);
 
         // ACT
-        PurchaseOrderDto result = purchaseOrderService.createPurshOrder(createRequest, warehouseManagerId);
+        PurchaseOrderDto result = purchaseOrderService.createPurshOrder(createRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -209,7 +209,7 @@ class PurchaseOrderServiceImplTest {
         when(purchaseOrderMapper.toDto(any(PurchaseOrder.class))).thenReturn(purchaseOrderDto);
 
         // ACT
-        PurchaseOrderDto result = purchaseOrderService.createPurshOrder(createRequest, adminId);
+        PurchaseOrderDto result = purchaseOrderService.createPurshOrder(createRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -223,7 +223,7 @@ class PurchaseOrderServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest, userId))
+        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("WAREHOUSE_MANAGER or ADMIN");
 
@@ -238,7 +238,7 @@ class PurchaseOrderServiceImplTest {
         when(supplierRepository.findById(supplierId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Supplier not found");
 
@@ -254,7 +254,7 @@ class PurchaseOrderServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.createPurshOrder(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product not found");
 
@@ -276,20 +276,20 @@ class PurchaseOrderServiceImplTest {
         mockInventoryDto.setProductId(productId);
         mockInventoryDto.setWarehouseId(warehouseId);
         mockInventoryDto.setQuantity_hand(50L);
-        when(inventoryService.recordMovement(any(CreateMovementRequest.class), eq(warehouseManagerId)))
+        when(inventoryService.recordMovement(any(CreateMovementRequest.class)))
                 .thenReturn(mockInventoryDto);
         when(purchaseOrderRepository.save(any(PurchaseOrder.class))).thenReturn(purchaseOrder);
         when(purchaseOrderMapper.toDto(any(PurchaseOrder.class))).thenReturn(purchaseOrderDto);
 
         // ACT
-        PurchaseOrderDto result = purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId);
+        PurchaseOrderDto result = purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
         assertThat(orderLine.getQuantityReceived()).isEqualTo(50); // 0 + 50
         assertThat(purchaseOrder.getStatus()).isEqualTo(PurchaseOrderStatus.PARTIALLY_RECEIVED);
 
-        verify(inventoryService, times(1)).recordMovement(any(), eq(warehouseManagerId));
+        verify(inventoryService, times(1)).recordMovement(any());
         verify(purchaseOrderRepository, times(1)).save(purchaseOrder);
     }
 
@@ -314,14 +314,14 @@ class PurchaseOrderServiceImplTest {
         when(purchaseOrderMapper.toDto(any(PurchaseOrder.class))).thenReturn(purchaseOrderDto);
 
         // ACT
-        PurchaseOrderDto result = purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId);
+        PurchaseOrderDto result = purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
         assertThat(orderLine.getQuantityReceived()).isEqualTo(100);
         assertThat(purchaseOrder.getStatus()).isEqualTo(PurchaseOrderStatus.RECEIVED);
 
-        verify(inventoryService, times(1)).recordMovement(any(), eq(warehouseManagerId));
+        verify(inventoryService, times(1)).recordMovement(any());
         verify(purchaseOrderRepository, times(1)).save(purchaseOrder);
     }
 
@@ -342,11 +342,11 @@ class PurchaseOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot receive more items than ordered");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
         verify(purchaseOrderRepository, never()).save(any(PurchaseOrder.class));
     }
 
@@ -361,11 +361,11 @@ class PurchaseOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already closed or canceled");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
     }
 
     @Test
@@ -379,11 +379,11 @@ class PurchaseOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("already closed or canceled");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
     }
 
     @Test
@@ -394,11 +394,11 @@ class PurchaseOrderServiceImplTest {
         when(purchaseOrderRepository.findById(purchaseOrderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Purchase Order not found");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
     }
 
     @Test
@@ -410,11 +410,11 @@ class PurchaseOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Warehouse not found");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
     }
 
     @Test
@@ -433,12 +433,12 @@ class PurchaseOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, warehouseManagerId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Order line with id")
                 .hasMessageContaining("not found");
 
-        verify(inventoryService, never()).recordMovement(any(), any());
+        verify(inventoryService, never()).recordMovement(any());
     }
 
     @Test
@@ -448,7 +448,7 @@ class PurchaseOrderServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest, userId))
+        assertThatThrownBy(() -> purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, receiveRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("WAREHOUSE_MANAGER or ADMIN");
 
