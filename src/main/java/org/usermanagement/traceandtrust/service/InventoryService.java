@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface InventoryService {
-    InventoryDto recordMovement(CreateMovementRequest request, UUID actorId);
-    void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
-    void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
-    void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId);
+    InventoryDto recordMovement(CreateMovementRequest request);
+    void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId);
+    void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId);
+    void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId);
 }
 

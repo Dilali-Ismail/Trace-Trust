@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ProductService {
-    ProductDto createProduct(CreateProductRequest request, UUID actorId);
-    List<ProductDto> getAllProducts(UUID actorId);
-    ProductDto getProductById(UUID productId, UUID actorId);
-    ProductDto updateProduct(UUID productId, UpdateProductRequest request, UUID actorId);
-    void deleteProduct(UUID productId, UUID actorId);
+    ProductDto createProduct(CreateProductRequest request);
+    List<ProductDto> getAllProducts();
+    ProductDto getProductById(UUID productId);
+    ProductDto updateProduct(UUID productId, UpdateProductRequest request);
+    void deleteProduct(UUID productId);
 }

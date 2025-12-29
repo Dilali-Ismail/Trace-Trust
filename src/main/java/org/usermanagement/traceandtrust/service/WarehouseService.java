@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface WarehouseService {
-    WarehouseDto createWarehouse(CreateWarehouseRequest request, UUID actorId);
-    List<WarehouseDto> getAllWarehouses(UUID actorId);
-    WarehouseDto getWarehouseById(UUID warehouseId, UUID actorId);
-    WarehouseDto updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request, UUID actorId);
-    void deleteWarehouse(UUID warehouseId, UUID actorId);
+    WarehouseDto createWarehouse(CreateWarehouseRequest request);
+    List<WarehouseDto> getAllWarehouses();
+    WarehouseDto getWarehouseById(UUID warehouseId);
+    WarehouseDto updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request);
+    void deleteWarehouse(UUID warehouseId);
 
 }

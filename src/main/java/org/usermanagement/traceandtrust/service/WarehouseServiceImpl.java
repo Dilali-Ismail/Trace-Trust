@@ -23,11 +23,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WarehouseServiceImpl implements WarehouseService{
     private final WarehouseRepository warehouseRepository;
-    private final UserRepository userRepository;
     private final WarehouseMapper warehouseMapper;
 
-    public WarehouseDto createWarehouse(CreateWarehouseRequest request, UUID actorId) {
-        checkAdminRole(actorId);
+    public WarehouseDto createWarehouse(CreateWarehouseRequest request) {
 
         warehouseRepository.findByCode(request.getCode()).ifPresent(w -> {
             throw new DuplicateResourceException("Warehouse with code '" + request.getCode() + "' already exists.");
@@ -37,21 +35,18 @@ public class WarehouseServiceImpl implements WarehouseService{
         Warehouse savedWarehouse = warehouseRepository.save(warehouse);
         return warehouseMapper.toDto(savedWarehouse);
     }
-    public List<WarehouseDto> getAllWarehouses(UUID actorId) {
-        checkAdminRole(actorId);
+    public List<WarehouseDto> getAllWarehouses() {
         return warehouseRepository.findAllByActiveTrue()
                 .stream()
                 .map(warehouseMapper::toDto)
                 .collect(Collectors.toList());
     }
-    public WarehouseDto getWarehouseById(UUID warehouseId, UUID actorId) {
-        checkAdminRole(actorId);
+    public WarehouseDto getWarehouseById(UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findByIdAndActiveTrue(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Active warehouse with ID " + warehouseId + " not found."));
         return warehouseMapper.toDto(warehouse);
     }
-    public WarehouseDto updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request, UUID actorId) {
-        checkAdminRole(actorId);
+    public WarehouseDto updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request) {
 
         Warehouse warehouseToUpdate = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse with ID " + warehouseId + " not found."));
@@ -62,22 +57,13 @@ public class WarehouseServiceImpl implements WarehouseService{
         Warehouse updatedWarehouse = warehouseRepository.save(warehouseToUpdate);
         return warehouseMapper.toDto(updatedWarehouse);
     }
-    public void deleteWarehouse(UUID warehouseId, UUID actorId) {
-        checkAdminRole(actorId);
+    public void deleteWarehouse(UUID warehouseId) {
 
         Warehouse warehouseToDelete = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse with ID " + warehouseId + " not found."));
 
         warehouseToDelete.setActive(false);
         warehouseRepository.save(warehouseToDelete);
-    }
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
-
-        if (actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This action can only be performed by an ADMIN user.");
-        }
     }
 
     }

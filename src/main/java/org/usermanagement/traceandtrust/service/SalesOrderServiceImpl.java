@@ -2,8 +2,12 @@ package org.usermanagement.traceandtrust.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
+import org.springframework.security.core.Authentication;
 import org.usermanagement.traceandtrust.dto.SalesOrderDto;
 import org.usermanagement.traceandtrust.dto.SalesOrderLineDto;
 import org.usermanagement.traceandtrust.entity.*;
@@ -18,10 +22,13 @@ import org.usermanagement.traceandtrust.repository.SalesOrderRepository;
 import org.usermanagement.traceandtrust.repository.UserRepository;
 import org.usermanagement.traceandtrust.repository.WarehouseRepository;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SalesOrderServiceImpl implements SalesOrderService {
     private final SalesOrderRepository salesOrderRepository;
     private final UserRepository userRepository;
@@ -30,10 +37,13 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private final SalesOrderMapper salesOrderMapper;
     private final InventoryService inventoryService;
 
-    public SalesOrderDto createSalesOrder(CreateSalesOrderRequest request, UUID actorId){
+    public SalesOrderDto createSalesOrder(CreateSalesOrderRequest request){
+        String email = getCurrentUserEmail();
 
-        User client = checkClientRole(actorId);
-
+        User client = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found with email: " + email)
+                );
         Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
 
@@ -59,11 +69,16 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
         }
         SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+
+        MDC.put("business_id", savedOrder.getId().toString());
+        log.info("Sales order created successfully");
+        MDC.remove("business_id");
+
         return salesOrderMapper.toDto(savedOrder);
 
     }
 
-    public SalesOrderDto reserveOrder(UUID orderId, UUID actorId){
+    public SalesOrderDto reserveOrder(UUID orderId){
         SalesOrder salesOrder = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
 
@@ -71,17 +86,21 @@ public class SalesOrderServiceImpl implements SalesOrderService {
             throw new BusinessException("Only orders with CREATED status can be reserved. Current status: " + salesOrder.getStatus());
         }
 
-        inventoryService.reserveStock(salesOrder.getOrderLines(),salesOrder.getWarehouse().getId(),actorId);
+        inventoryService.reserveStock(salesOrder.getOrderLines(),salesOrder.getWarehouse().getId());
         salesOrder.setStatus(SalesOrderStatus.RESERVED);
         SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+        
+        MDC.put("business_id", orderId.toString());
+        log.info("Sales order reserved. Status changed to RESERVED.");
+        MDC.remove("business_id");
+        
         return salesOrderMapper.toDto(savedOrder);
 
     }
 
     @Override
     @Transactional
-    public SalesOrderDto cancelOrder(UUID orderId, UUID actorId){
-        checkAdminRole(actorId);
+    public SalesOrderDto cancelOrder(UUID orderId){
 
         SalesOrder salesOrder = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
@@ -92,7 +111,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
             case RESERVED:
 
-                inventoryService.releaseStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId(), actorId);
+                inventoryService.releaseStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId());
                 salesOrder.setStatus(SalesOrderStatus.CANCELED);
                 break;
 
@@ -106,25 +125,42 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         }
 
         SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+        MDC.put("business_id", orderId.toString());
+        log.info("Sales order canceled. New status: {}", savedOrder.getStatus());
+        MDC.remove("business_id");
+
         return salesOrderMapper.toDto(savedOrder);
 
     }
 
-    private User checkClientRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.CLIENT) {
-            throw new ForbiddenAccessException("Only CLIENT users can create sales orders.");
+    private String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found");
         }
-        return actor;
+
+        // Retourne l'email (c'est le "username" dans notre UserDetailsService)
+        return authentication.getName();
     }
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This operation is restricted to ADMIN users.");
-        }
-    }
+
+   public  List<SalesOrderDto> getAllSalesOrders(){
+       String role = getCurrentUserRole();
+       String email = getCurrentUserEmail();
+       if ("ROLE_CLIENT".equals(role)) {
+           return salesOrderRepository.findAllByClientEmail(email).stream()
+                   .map(salesOrderMapper::toDto)
+                   .collect(Collectors.toList());
+       }
+       return salesOrderRepository.findAll().stream()
+               .map(salesOrderMapper::toDto)
+               .collect(Collectors.toList());
+   }
+
+    private String getCurrentUserRole() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth.getAuthorities().iterator().next().getAuthority();
+   }
 
 }
 

@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface ShipmentRepository extends JpaRepository<Shipment,UUID> {
 
     boolean existsBySalesOrderId(UUID salesOrderId);
+
+    java.util.List<Shipment> findAllBySalesOrderClientEmail(String email);
 }

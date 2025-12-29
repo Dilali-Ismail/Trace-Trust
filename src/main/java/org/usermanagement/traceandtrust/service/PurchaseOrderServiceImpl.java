@@ -24,12 +24,11 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final ProductRepository productRepository;
     private final SupplierRepository supplierRepository;
-    private final UserRepository userRepository;
     private final InventoryService inventoryService;
     private final WarehouseRepository warehouseRepository;
 
-    public PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest request , UUID actoreId){
-        checkWarehouseManagerOrAdminRole(actoreId);
+    public PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest request){
+
 
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + request.getSupplierId()));
@@ -57,8 +56,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     }
 
     @Transactional
-    public PurchaseOrderDto receivePurchaseOrderItems(UUID purchaseOrderId, ReceivePurchaseOrderRequest request, UUID actorId){
-        checkWarehouseManagerOrAdminRole(actorId);
+    public PurchaseOrderDto receivePurchaseOrderItems(UUID purchaseOrderId, ReceivePurchaseOrderRequest request){
         PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + purchaseOrderId));
         Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
@@ -80,7 +78,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
             movementRequest.setWarehouseId(warehouse.getId());
             movementRequest.setType(MovementType.INBOUND);
             movementRequest.setQuantity(recieveline.getQuantityReceived());
-            inventoryService.recordMovement(movementRequest, actorId);
+            inventoryService.recordMovement(movementRequest);
             line.setQuantityReceived(totalReceivedSoFar);
         }
         updatePurchaseOrderStatus(po);
@@ -89,13 +87,6 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         return purchaseOrderMapper.toDto(savedPo);
     }
 
-    private void checkWarehouseManagerOrAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.WAREHOUSE_MANAGER && actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This operation is restricted to WAREHOUSE_MANAGER or ADMIN users.");
-        }
-    }
 
     private void updatePurchaseOrderStatus(PurchaseOrder po) {
         boolean allLinesFullyReceived = po.getOrderLines().stream()

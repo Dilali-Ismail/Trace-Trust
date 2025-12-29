@@ -163,7 +163,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.createSalesOrder(createRequest, clientId);
+        SalesOrderDto result = salesOrderService.createSalesOrder(createRequest);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -183,7 +183,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest, userId))
+        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("Only CLIENT users can create sales orders");
 
@@ -201,7 +201,7 @@ class SalesOrderServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest, clientId))
+        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("not available for sale");
 
@@ -216,7 +216,7 @@ class SalesOrderServiceImplTest {
         when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest, clientId))
+        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Warehouse not found");
 
@@ -232,7 +232,7 @@ class SalesOrderServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest, clientId))
+        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Product not found");
 
@@ -246,7 +246,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(clientId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest, clientId))
+        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found");
 
@@ -262,19 +262,19 @@ class SalesOrderServiceImplTest {
     void reserveOrder_Success() {
         // ARRANGE
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
-        doNothing().when(inventoryService).reserveStock(any(), any(), any());
+        doNothing().when(inventoryService).reserveStock(any(), any());
         when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.reserveOrder(orderId, userId);
+        SalesOrderDto result = salesOrderService.reserveOrder(orderId);
 
         // ASSERT
         assertThat(result).isNotNull();
         assertThat(salesOrder.getStatus()).isEqualTo(SalesOrderStatus.RESERVED);
 
         verify(salesOrderRepository, times(1)).findById(orderId);
-        verify(inventoryService, times(1)).reserveStock(salesOrder.getOrderLines(), warehouseId, userId);
+        verify(inventoryService, times(1)).reserveStock(salesOrder.getOrderLines(), warehouseId);
         verify(salesOrderRepository, times(1)).save(salesOrder);
     }
 
@@ -287,11 +287,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId, userId))
+        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Only orders with CREATED status can be reserved");
 
-        verify(inventoryService, never()).reserveStock(any(), any(), any());
+        verify(inventoryService, never()).reserveStock(any(), any());
         verify(salesOrderRepository, never()).save(any(SalesOrder.class));
     }
 
@@ -302,11 +302,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId, userId))
+        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Sales Order not found");
 
-        verify(inventoryService, never()).reserveStock(any(), any(), any());
+        verify(inventoryService, never()).reserveStock(any(), any());
     }
 
     // ============================================
@@ -325,7 +325,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.cancelOrder(orderId, adminId);
+        SalesOrderDto result = salesOrderService.cancelOrder(orderId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -333,7 +333,7 @@ class SalesOrderServiceImplTest {
 
         verify(userRepository, times(1)).findById(adminId);
         verify(salesOrderRepository, times(1)).findById(orderId);
-        verify(inventoryService, never()).releaseStock(any(), any(), any());
+        verify(inventoryService, never()).releaseStock(any(), any());
         verify(salesOrderRepository, times(1)).save(salesOrder);
     }
 
@@ -345,18 +345,18 @@ class SalesOrderServiceImplTest {
 
         when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
-        doNothing().when(inventoryService).releaseStock(any(), any(), any());
+        doNothing().when(inventoryService).releaseStock(any(), any());
         when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.cancelOrder(orderId, adminId);
+        SalesOrderDto result = salesOrderService.cancelOrder(orderId);
 
         // ASSERT
         assertThat(result).isNotNull();
         assertThat(salesOrder.getStatus()).isEqualTo(SalesOrderStatus.CANCELED);
 
-        verify(inventoryService, times(1)).releaseStock(salesOrder.getOrderLines(), warehouseId, adminId);
+        verify(inventoryService, times(1)).releaseStock(salesOrder.getOrderLines(), warehouseId);
         verify(salesOrderRepository, times(1)).save(salesOrder);
     }
 
@@ -370,11 +370,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, adminId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot cancel an order that has already been shipped or delivered");
 
-        verify(inventoryService, never()).releaseStock(any(), any(), any());
+        verify(inventoryService, never()).releaseStock(any(), any());
         verify(salesOrderRepository, never()).save(any(SalesOrder.class));
     }
 
@@ -388,11 +388,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, adminId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot cancel an order that has already been shipped or delivered");
 
-        verify(inventoryService, never()).releaseStock(any(), any(), any());
+        verify(inventoryService, never()).releaseStock(any(), any());
         verify(salesOrderRepository, never()).save(any(SalesOrder.class));
     }
 
@@ -406,11 +406,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, adminId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("This order has already been canceled");
 
-        verify(inventoryService, never()).releaseStock(any(), any(), any());
+        verify(inventoryService, never()).releaseStock(any(), any());
         verify(salesOrderRepository, never()).save(any(SalesOrder.class));
     }
 
@@ -421,7 +421,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, userId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -436,11 +436,11 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, adminId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Sales Order not found");
 
-        verify(inventoryService, never()).releaseStock(any(), any(), any());
+        verify(inventoryService, never()).releaseStock(any(), any());
     }
 
     @Test
@@ -450,7 +450,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(adminId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, adminId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found");
 

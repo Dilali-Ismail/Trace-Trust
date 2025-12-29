@@ -29,8 +29,7 @@ public class SupplierServiceImpl implements SupplierService{
 
     @Override
     @Transactional
-    public SupplierDto createSupplier(CreateSupplierRequest request, UUID actorId) {
-        checkAdminRole(actorId);
+    public SupplierDto createSupplier(CreateSupplierRequest request) {
 
         supplierRepository.findByName(request.getName()).ifPresent(s -> {
             throw new DuplicateResourceException("Supplier with name '" + request.getName() + "' already exists.");
@@ -43,19 +42,10 @@ public class SupplierServiceImpl implements SupplierService{
     }
 
     @Override
-    public List<SupplierDto> getAllSuppliers(UUID actorId) {
-        checkAdminRole(actorId);
+    public List<SupplierDto> getAllSuppliers() {
 
         return supplierRepository.findAll().stream()
                 .map(supplierMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This operation is restricted to ADMIN users.");
-        }
     }
 }

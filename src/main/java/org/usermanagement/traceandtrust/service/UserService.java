@@ -10,6 +10,5 @@ public interface UserService {
 
     UserDto register(CreateUserRequest request);
     UserDto login(LoginRequest request);
-    List<UserDto> getAllUsers(UUID actorId);
-
+    List<UserDto> getAllUsers();
 }

@@ -21,25 +21,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CarrierServiceImpl implements CarrierService {
     private final CarrierRepository carrierRepository;
-    private final UserRepository userRepository;
     private final CarrierMapper carrierMapper;
 
     @Override
-    public CarrierDto createCarrier(CreateCarrierRequest request, UUID actorId) {
-        checkAdminRole(actorId);
+    public CarrierDto createCarrier(CreateCarrierRequest request) {
         Carrier carrier = carrierMapper.toEntity(request);
         return carrierMapper.toDto(carrierRepository.save(carrier));
     }
     @Override
-    public List<CarrierDto> getAllCarriers(UUID actorId) {
-        checkAdminRole(actorId);
+    public List<CarrierDto> getAllCarriers() {
         return carrierRepository.findAll().stream().map(carrierMapper::toDto).collect(Collectors.toList());
-    }
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor not found with id: " + actorId));
-        if (actor.getRole() != Role.ADMIN) {
-            throw new ForbiddenAccessException("This operation is restricted to ADMIN users.");
-        }
     }
 }

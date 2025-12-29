@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="springAppName" source="spring.application.name"/>
+
+    <!-- Appender pour la Console (humainement lisible) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Destination Logstash (Configurable via property) -->
+    <springProperty scope="context" name="logstashDest" source="logging.logstash.destination" defaultValue="logstash:5000"/>
+
+    <!-- Appender pour Elasticsearch (Envoi automatique via TCP à Logstash) -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>${logstashDest}</destination>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <pattern>
+                    <pattern>
+                        {
+                        "severity": "%level",
+                        "service": "${springAppName:-TraceAndTrust}",
+                        "trace": "%X{traceId:-}",
+                        "span": "%X{spanId:-}",
+                        "pid": "${PID:-}",
+                        "thread": "%thread",
+                        "class": "%logger{40}",
+                        "message": "%message",
+                        "user": "%X{user:-anonymous}",
+                        "role": "%X{role:-none}",
+                        "endpoint": "%X{endpoint:-}",
+                        "status": "%X{status:-}",
+                        "business_id": "%X{business_id:-}",
+                        "stack_trace": "%exception{10}"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOGSTASH"/>
+    </root>
+
+</configuration>

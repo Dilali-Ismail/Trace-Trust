@@ -23,7 +23,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 
 public class InventoryServiceImpl implements InventoryService{
-    private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final InventoryRepository inventoryRepository;
@@ -31,8 +30,7 @@ public class InventoryServiceImpl implements InventoryService{
     private final InventoryMapper inventoryMapper;
 
     @Transactional
-   public InventoryDto recordMovement(CreateMovementRequest request, UUID actorId){
-         checkAdminRole(actorId);
+   public InventoryDto recordMovement(CreateMovementRequest request){
        Product product = productRepository.findById(request.getProductId())
                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
@@ -76,8 +74,7 @@ public class InventoryServiceImpl implements InventoryService{
          return inventoryMapper.toDto(savedInventory);
    }
 
-    public void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
-        checkAdminRole(actorId);
+    public void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
 
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
@@ -100,8 +97,7 @@ public class InventoryServiceImpl implements InventoryService{
         }
     }
     @Transactional
-    public void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId) {
-        checkAdminRole(actorId);
+    public void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
         for (SalesOrderLine line : orderLines) {
@@ -114,8 +110,7 @@ public class InventoryServiceImpl implements InventoryService{
             });
         }
     }
-    public void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId, UUID actorId){
-        checkAdminRole(actorId);
+    public void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId){
 
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
@@ -146,12 +141,5 @@ public class InventoryServiceImpl implements InventoryService{
             inventoryMovement.save(movement);
         }
     }
-    private void checkAdminRole(UUID actorId) {
-        User actor = userRepository.findById(actorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Actor user with ID " + actorId + " not found."));
 
-        if (actor.getRole() != Role.WAREHOUSE_MANAGER) {
-            throw new ForbiddenAccessException("Only WAREHOUSE_MANAGER can record stock movements..");
-        }
-    }
 }

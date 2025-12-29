@@ -26,7 +26,7 @@ public class Inventory {
     private UUID id ;
 
     @ManyToOne(optional = false , fetch = FetchType.LAZY)
-    @JoinColumn(name = "prodcut_id",nullable = false)
+    @JoinColumn(name = "product_id",nullable = false)
     private Product product;
 
     @ManyToOne(optional = false , fetch = FetchType.LAZY)

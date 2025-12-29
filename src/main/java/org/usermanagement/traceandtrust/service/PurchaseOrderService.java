@@ -7,6 +7,6 @@ import org.usermanagement.traceandtrust.dto.ReceivePurchaseOrderRequest;
 import java.util.UUID;
 
 public interface PurchaseOrderService {
-    PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest orderRequest , UUID actoreID);
-    PurchaseOrderDto receivePurchaseOrderItems(UUID purchaseOrderId, ReceivePurchaseOrderRequest request, UUID actorId);
+    PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest orderRequest );
+    PurchaseOrderDto receivePurchaseOrderItems(UUID purchaseOrderId, ReceivePurchaseOrderRequest request);
 }

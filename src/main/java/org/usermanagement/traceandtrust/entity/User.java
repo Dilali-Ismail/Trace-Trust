@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.usermanagement.traceandtrust.enums.Role;
 
+import java.beans.ConstructorProperties;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -12,6 +13,8 @@ import java.util.UUID;
 @Table(name = "users")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
     @Id
@@ -22,7 +25,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
-    private String Name;
+    private String name;
 
     @Column(nullable = false)
     private String password;
@@ -32,6 +35,12 @@ public class User {
     private Role role;
 
     @Column(nullable = false)
-    private boolean active = true;
+    private boolean enabled = true;
+
+    @Column(name = "account_locked")
+    private boolean accountLocked = false;
+
+    @Column(name = "failed_attempts")
+    private int failedAttempts = 0;
 
 }

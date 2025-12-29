@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CreateProductRequest;
 import org.usermanagement.traceandtrust.dto.ProductDto;
@@ -21,45 +22,45 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping("/create")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDto> createProduct(
-            @RequestHeader("X-Actor-ID") UUID actorId,
             @Valid @RequestBody CreateProductRequest request){
 
-        ProductDto createdProduct = productService.createProduct(request, actorId);
+        ProductDto createdProduct = productService.createProduct(request);
         return new ResponseEntity<>(createdProduct, HttpStatus.CREATED);
     }
     @GetMapping
-    public ResponseEntity<List<ProductDto>> getAllProducts(
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
 
-        List<ProductDto> products = productService.getAllProducts(actorId);
+        List<ProductDto> products = productService.getAllProducts();
         return ResponseEntity.ok(products);
     }
 
     @GetMapping("/{productId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProductDto> getProductById(
-            @PathVariable UUID productId,
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+            @PathVariable UUID productId) {
 
-        ProductDto product = productService.getProductById(productId, actorId);
+        ProductDto product = productService.getProductById(productId);
         return ResponseEntity.ok(product);
     }
 
     @PutMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductDto> updateProduct(
             @PathVariable UUID productId,
-            @RequestHeader("X-Actor-ID") UUID actorId,
             @Valid @RequestBody UpdateProductRequest request) {
 
-        ProductDto updatedProduct = productService.updateProduct(productId, request, actorId);
+        ProductDto updatedProduct = productService.updateProduct(productId, request);
         return ResponseEntity.ok(updatedProduct);
     }
     @DeleteMapping("/{productId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteProduct(
-            @PathVariable UUID productId,
-            @RequestHeader("X-Actor-ID") UUID actorId) {
+            @PathVariable UUID productId) {
 
-        productService.deleteProduct(productId, actorId);
+        productService.deleteProduct(productId);
 
         return ResponseEntity.noContent().build();
     }
