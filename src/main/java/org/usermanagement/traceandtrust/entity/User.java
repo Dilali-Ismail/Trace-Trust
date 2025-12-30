@@ -24,8 +24,10 @@ public class User {
     @Column(nullable = false)
     private String Name;
 
-    @Column(nullable = false)
-    private String password;
+//    @Column(nullable = false)
+//    private String password;
+    @Column(name = "keycloak_id", unique = true)
+     private String keycloakId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

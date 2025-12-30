@@ -27,11 +27,13 @@ public class UserController {
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
+    /*
     @PostMapping("/login")
     public ResponseEntity<UserDto> login(@Valid @RequestBody LoginRequest request) {
         UserDto user = userService.login(request);
         return ResponseEntity.ok(user);
     }
+    */
 
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUser(@RequestHeader("X-Request-id") UUID actorId){
