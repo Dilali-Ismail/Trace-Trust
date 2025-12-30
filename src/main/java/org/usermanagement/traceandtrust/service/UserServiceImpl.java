@@ -16,6 +16,7 @@ import org.usermanagement.traceandtrust.repository.UserRepository;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,17 +26,17 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-    @Override
-    public UserDto register(CreateUserRequest request) {
-        userRepository.findByEmail(request.getEmail()).ifPresent(user ->
-        {
-            throw new DuplicateResourceException("Email already in use");
-        });
-
-        User user = userMapper.toEntity(request);
-        User saveUser = userRepository.save(user);
-        return userMapper.toDto(saveUser);
-    }
+//    @Override
+//    public UserDto register(CreateUserRequest request) {
+//        userRepository.findByEmail(request.getEmail()).ifPresent(user ->
+//        {
+//            throw new DuplicateResourceException("Email already in use");
+//        });
+//
+//        User user = userMapper.toEntity(request);
+//        User saveUser = userRepository.save(user);
+//        return userMapper.toDto(saveUser);
+//    }
 /*
     public UserDto login(LoginRequest request){
         User user = userRepository.findByEmail(request.getEmail())
@@ -58,30 +59,45 @@ public class UserServiceImpl implements UserService {
         }
         return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
     }
-    public User syncUser(Jwt jwt) {
-        // 1. Récupérer l'ID unique Keycloak (le plus fiable)
-        String keycloakId = jwt.getSubject();
 
-        // 2. Récupérer les infos utiles (Email, Nom...)
+    public User syncUser(Jwt jwt) {
+        String keycloakId = jwt.getSubject();
         String email = jwt.getClaim("email");
 
-        // 3. Chercher par ID Keycloak (ou Email pour la migration)
-        return userRepository.findByEmail(email) // Ou findByKeycloakId(keycloakId)
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        List<String> roles = (List<String>) realmAccess.get("roles");
+
+        Role roleToSave = Role.CLIENT;
+        if(roles.contains("ADMIN")){
+            roleToSave = Role.ADMIN;
+        } else if (roles.contains("WAREHOUSE_MANAGER")){
+            roleToSave = Role.WAREHOUSE_MANAGER;
+        }
+
+        final Role finalRole = roleToSave;
+
+        return userRepository.findByEmail(email)
                 .map(existingUser -> {
-                    // Mise à jour optionnelle : si l'utilisateur a changé de nom dans Keycloak
-                    if (!existingUser.getKeycloakId().equals(keycloakId)) {
+                    boolean changed = false;
+
+                    if(!keycloakId.equals(existingUser.getKeycloakId())) {
                         existingUser.setKeycloakId(keycloakId);
-                        return userRepository.save(existingUser);
+                        changed = true;
                     }
-                    return existingUser;
+
+                    if(!existingUser.getRole().equals(finalRole)){
+                        existingUser.setRole(finalRole);
+                        changed = true;
+                    }
+
+                    return changed ? userRepository.save(existingUser) : existingUser;
                 })
                 .orElseGet(() -> {
-                    // 4. Création à la volée ("Onboarding")
                     User newUser = new User();
                     newUser.setKeycloakId(keycloakId);
                     newUser.setEmail(email);
                     newUser.setActive(true);
-                    newUser.setRole(Role.CLIENT); // Rôle par défaut, ou extrait du JWT
+                    newUser.setRole(finalRole);
                     return userRepository.save(newUser);
                 });
     }

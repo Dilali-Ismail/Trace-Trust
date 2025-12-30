@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public interface UserService {
 
-    UserDto register(CreateUserRequest request);
+//    UserDto register(CreateUserRequest request);
     //UserDto login(LoginRequest request);
     List<UserDto> getAllUsers(UUID actorId);
     User syncUser(Jwt jwt);

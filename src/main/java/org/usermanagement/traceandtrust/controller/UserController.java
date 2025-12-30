@@ -21,11 +21,11 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@Valid @RequestBody CreateUserRequest request) {
-        UserDto createdUser = userService.register(request);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-    }
+//    @PostMapping("/register")
+//    public ResponseEntity<UserDto> register(@Valid @RequestBody CreateUserRequest request) {
+//        UserDto createdUser = userService.register(request);
+//        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
+//    }
 
     /*
     @PostMapping("/login")
