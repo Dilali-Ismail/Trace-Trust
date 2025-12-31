@@ -64,6 +64,15 @@ public class UserServiceImpl implements UserService {
         String keycloakId = jwt.getSubject();
         String email = jwt.getClaim("email");
 
+        String firstName = jwt.getClaim("given_name");
+        String lastName = jwt.getClaim("family_name");
+        String fullName = (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "");
+        fullName = fullName.trim();
+
+        if (fullName.isEmpty()) {
+            fullName = email;
+        }
+
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         List<String> roles = (List<String>) realmAccess.get("roles");
 
@@ -75,6 +84,7 @@ public class UserServiceImpl implements UserService {
         }
 
         final Role finalRole = roleToSave;
+        final String finalName = fullName;
 
         return userRepository.findByEmail(email)
                 .map(existingUser -> {
@@ -96,6 +106,7 @@ public class UserServiceImpl implements UserService {
                     User newUser = new User();
                     newUser.setKeycloakId(keycloakId);
                     newUser.setEmail(email);
+                    newUser.setName(finalName);
                     newUser.setActive(true);
                     newUser.setRole(finalRole);
                     return userRepository.save(newUser);
