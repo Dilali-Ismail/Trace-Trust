@@ -26,30 +26,36 @@ public class AuthService {
     @Transactional
     public AuthResponse login(LoginRequest loginRequest){
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getEmail(),
+                            loginRequest.getPassword()
+                    )
+            );
 
-        User user = userDetailsService.getUserByEmail(loginRequest.getEmail());
+            User user = userDetailsService.getUserByEmail(loginRequest.getEmail());
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String accessToken = jwtService.generateAcessToken(userDetails, user.getRole().name());
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String accessToken = jwtService.generateAcessToken(userDetails, user.getRole().name());
 
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
-        log.info("User logged in successfully: {}", user.getEmail());
+            log.info("User logged in successfully: {}", user.getEmail());
 
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
-                .tokenType("Bearer")
-                .expiresIn(900L) // 15 minutes en secondes
-                .role(user.getRole().name())
-                .email(user.getEmail())
-                .build();
+            return AuthResponse.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .tokenType("Bearer")
+                    .expiresIn(900L)
+                    .role(user.getRole().name())
+                    .email(user.getEmail())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Login failed for user: {}", loginRequest.getEmail(), e);
+            throw e;
+        }
     }
 
     public AuthResponse refreshAccessToken(String refreshTokenValue){
