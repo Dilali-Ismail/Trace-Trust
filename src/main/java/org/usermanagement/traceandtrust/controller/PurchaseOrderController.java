@@ -11,6 +11,7 @@ import org.usermanagement.traceandtrust.dto.PurchaseOrderDto;
 import org.usermanagement.traceandtrust.dto.ReceivePurchaseOrderRequest;
 import org.usermanagement.traceandtrust.service.PurchaseOrderService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,5 +39,17 @@ public class PurchaseOrderController {
 
         PurchaseOrderDto updatedOrder = purchaseOrderService.receivePurchaseOrderItems(purchaseOrderId, request);
         return ResponseEntity.ok(updatedOrder);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    public ResponseEntity<List<PurchaseOrderDto>> getAllPurchaseOrders() {
+        return ResponseEntity.ok(purchaseOrderService.getAllPurchaseOrders());
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    public ResponseEntity<PurchaseOrderDto> getPurchaseOrderById(@PathVariable UUID id) {
+        return ResponseEntity.ok(purchaseOrderService.getPurchaseOrderById(id));
     }
 }

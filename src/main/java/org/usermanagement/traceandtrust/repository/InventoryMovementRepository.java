@@ -8,5 +8,8 @@ import java.util.UUID;
 
 @Repository
 public interface InventoryMovementRepository extends JpaRepository<InventoryMovement, UUID> {
+    java.util.List<InventoryMovement> findByWarehouseId(UUID warehouseId);
+    java.util.List<InventoryMovement> findByProductId(UUID productId);
+    java.util.List<InventoryMovement> findByWarehouseIdAndProductId(UUID warehouseId, UUID productId);
 
 }

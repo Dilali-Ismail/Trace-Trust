@@ -160,7 +160,21 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private String getCurrentUserRole() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth.getAuthorities().iterator().next().getAuthority();
-   }
+    }
 
+    @Override
+    public SalesOrderDto getSalesOrderById(UUID id) {
+        SalesOrder salesOrder = salesOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + id));
+
+        String role = getCurrentUserRole();
+        String email = getCurrentUserEmail();
+
+        if ("ROLE_CLIENT".equals(role) && !salesOrder.getClient().getEmail().equals(email)) {
+             throw new ForbiddenAccessException("You are not authorized to view this order.");
+        }
+
+        return salesOrderMapper.toDto(salesOrder);
+    }
 }
 

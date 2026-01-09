@@ -11,4 +11,5 @@ public interface SalesOrderService {
     SalesOrderDto reserveOrder(UUID orderId);
     SalesOrderDto cancelOrder(UUID orderId);
     List<SalesOrderDto> getAllSalesOrders();
+    SalesOrderDto getSalesOrderById(UUID id);
 }

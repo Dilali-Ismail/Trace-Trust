@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface PurchaseOrderService {
     PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest orderRequest );
     PurchaseOrderDto receivePurchaseOrderItems(UUID purchaseOrderId, ReceivePurchaseOrderRequest request);
+    java.util.List<PurchaseOrderDto> getAllPurchaseOrders();
+    PurchaseOrderDto getPurchaseOrderById(UUID id);
 }

@@ -11,4 +11,7 @@ public interface UserService {
     UserDto register(CreateUserRequest request);
     UserDto login(LoginRequest request);
     List<UserDto> getAllUsers();
+    UserDto getUserById(UUID id);
+    UserDto updateUser(UUID id, UpdateUserRequest request);
+    void deleteUser(UUID id);
 }
