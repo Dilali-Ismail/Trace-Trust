@@ -10,7 +10,9 @@ import org.usermanagement.traceandtrust.dto.CreateMovementRequest;
 import org.usermanagement.traceandtrust.dto.InventoryDto;
 import org.usermanagement.traceandtrust.service.InventoryService;
 
+import java.util.List;
 import java.util.UUID;
+import org.usermanagement.traceandtrust.dto.InventoryMovementDto;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -26,5 +28,21 @@ public class InventoryController {
 
         InventoryDto updatedInventory = inventoryService.recordMovement(request);
         return ResponseEntity.ok(updatedInventory);
+    }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<InventoryDto>> getInventory(
+            @RequestParam(required = false) UUID warehouseId,
+            @RequestParam(required = false) UUID productId) {
+        return ResponseEntity.ok(inventoryService.getStock(warehouseId, productId));
+    }
+
+    @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('WAREHOUSE_MANAGER', 'ADMIN')")
+    public ResponseEntity<List<InventoryMovementDto>> getHistory(
+            @RequestParam(required = false) UUID warehouseId,
+            @RequestParam(required = false) UUID productId) {
+        return ResponseEntity.ok(inventoryService.getHistory(warehouseId, productId));
     }
 }

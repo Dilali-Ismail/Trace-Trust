@@ -15,7 +15,9 @@ import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
 import org.usermanagement.traceandtrust.mapper.PurchaseOrderMapper;
 import org.usermanagement.traceandtrust.repository.*;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PurchaseOrderServiceImpl implements PurchaseOrderService {
@@ -97,6 +99,20 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         } else {
             po.setStatus(PurchaseOrderStatus.PARTIALLY_RECEIVED);
         }
+    }
+
+    @Override
+    public List<PurchaseOrderDto> getAllPurchaseOrders() {
+        return purchaseOrderRepository.findAll().stream()
+                .map(purchaseOrderMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public PurchaseOrderDto getPurchaseOrderById(UUID id) {
+        PurchaseOrder po = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Purchase Order not found with id: " + id));
+        return purchaseOrderMapper.toDto(po);
     }
 
 }

@@ -19,6 +19,8 @@ import org.usermanagement.traceandtrust.repository.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.usermanagement.traceandtrust.dto.InventoryMovementDto;
 @Service
 @RequiredArgsConstructor
 
@@ -142,4 +144,57 @@ public class InventoryServiceImpl implements InventoryService{
         }
     }
 
+    @Override
+    public List<InventoryDto> getStock(UUID warehouseId, UUID productId) {
+        if (warehouseId != null && productId != null) {
+            return inventoryRepository.findByProductAndWarehouse(
+                    productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product not found")),
+                    warehouseRepository.findById(warehouseId).orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"))
+            ).stream().map(inventoryMapper::toDto).collect(Collectors.toList());
+        } else if (warehouseId != null) {
+            return inventoryRepository.findByWarehouseId(warehouseId).stream()
+                    .map(inventoryMapper::toDto)
+                    .collect(Collectors.toList());
+        } else if (productId != null) {
+             return inventoryRepository.findByProductId(productId).stream()
+                    .map(inventoryMapper::toDto)
+                    .collect(Collectors.toList());
+        } else {
+            return inventoryRepository.findAll().stream()
+                    .map(inventoryMapper::toDto)
+                    .collect(Collectors.toList());
+        }
+    }
+
+    @Override
+    public List<InventoryMovementDto> getHistory(UUID warehouseId, UUID productId) {
+        List<InventoryMovement> movements;
+        if (warehouseId != null && productId != null) {
+            movements = inventoryMovement.findByWarehouseIdAndProductId(warehouseId, productId);
+        } else if (warehouseId != null) {
+            movements = inventoryMovement.findByWarehouseId(warehouseId);
+        } else if (productId != null) {
+            movements = inventoryMovement.findByProductId(productId);
+        } else {
+            movements = inventoryMovement.findAll();
+        }
+
+        return movements.stream()
+            .map(this::toMovementDto)
+            .collect(Collectors.toList());
+    }
+
+    private InventoryMovementDto toMovementDto(InventoryMovement movement) {
+        return InventoryMovementDto.builder()
+            .id(movement.getId())
+            .productId(movement.getProduct().getId())
+            .productSku(movement.getProduct().getSku())
+            .warehouseId(movement.getWarehouse().getId())
+            .warehouseName(movement.getWarehouse().getName())
+            .type(movement.getType())
+            .quantity(movement.getQuantity())
+            .referenceDocument(movement.getReferenceDocument())
+            .occurredAt(movement.getOccurredAt())
+            .build();
+    }
 }

@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateUserRequest;
 import org.usermanagement.traceandtrust.dto.LoginRequest;
+import org.usermanagement.traceandtrust.dto.UpdateUserRequest;
 import org.usermanagement.traceandtrust.dto.UserDto;
 import org.usermanagement.traceandtrust.entity.User;
 import org.usermanagement.traceandtrust.enums.Role;
@@ -53,5 +54,40 @@ public class UserServiceImpl implements UserService {
     public List<UserDto> getAllUsers(){
 
         return userRepository.findAll().stream().map(userMapper::toDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public UserDto getUserById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        return userMapper.toDto(user);
+    }
+
+    @Override
+    public UserDto updateUser(UUID id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        if (!user.getEmail().equals(request.getEmail()) && userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email already in use");
+        }
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+        user.setEnabled(request.isEnabled());
+
+        User updatedUser = userRepository.save(user);
+        return userMapper.toDto(updatedUser);
+    }
+
+    @Override
+    public void deleteUser(UUID id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 }

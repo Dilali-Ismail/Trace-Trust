@@ -11,6 +11,7 @@ import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
 import org.usermanagement.traceandtrust.dto.SalesOrderDto;
 import org.usermanagement.traceandtrust.service.SalesOrderService;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,5 +45,16 @@ public class SalesOrderController {
 
         SalesOrderDto canceledOrder = salesOrderService.cancelOrder(orderId);
         return ResponseEntity.ok(canceledOrder);
+    }
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'CLIENT')")
+    public ResponseEntity<List<SalesOrderDto>> getAllSalesOrders() {
+        return ResponseEntity.ok(salesOrderService.getAllSalesOrders());
+    }
+
+    @GetMapping("/{orderId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER', 'CLIENT')")
+    public ResponseEntity<SalesOrderDto> getSalesOrderById(@PathVariable UUID orderId) {
+        return ResponseEntity.ok(salesOrderService.getSalesOrderById(orderId));
     }
 }
