@@ -8,8 +8,9 @@ import java.util.UUID;
 
 public interface SalesOrderService {
     SalesOrderDto createSalesOrder(CreateSalesOrderRequest request);
-    SalesOrderDto reserveOrder(UUID orderId);
-    SalesOrderDto cancelOrder(UUID orderId);
+    SalesOrderDto reserveOrder(UUID orderId, UUID warehouseId);
+    SalesOrderDto requestReservation(UUID orderId, UUID warehouseId);
+    SalesOrderDto cancelOrder(UUID orderId, UUID warehouseId);
     List<SalesOrderDto> getAllSalesOrders();
     SalesOrderDto getSalesOrderById(UUID id);
 }

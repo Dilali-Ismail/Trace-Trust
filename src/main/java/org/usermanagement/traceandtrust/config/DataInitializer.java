@@ -17,6 +17,7 @@ import org.usermanagement.traceandtrust.repository.UserRepository;
 @Slf4j
 public class DataInitializer {
 
+
     @Bean
     CommandLineRunner initDatabase(
             UserRepository userRepository,
@@ -33,7 +34,7 @@ public class DataInitializer {
                         .accountLocked(false)
                         .build();
                 userRepository.save(admin);
-                log.info("✅ Admin : admin@test.com / admin123");
+                log.info(" Admin : admin@test.com / admin123");
             }
 
             if (userRepository.findByEmail("manager@test.com").isEmpty()) {
@@ -46,7 +47,7 @@ public class DataInitializer {
                         .accountLocked(false)
                         .build();
                 userRepository.save(manager);
-                log.info("✅ Manager : manager@test.com / manager123");
+                log.info(" Manager : manager@test.com / manager123");
             }
 
             if (userRepository.findByEmail("client@test.com").isEmpty()) {
@@ -59,7 +60,7 @@ public class DataInitializer {
                         .accountLocked(false)
                         .build();
                 userRepository.save(client);
-                log.info("✅ Client : client@test.com / client123");
+                log.info(" Client : client@test.com / client123");
             }
         };
     }

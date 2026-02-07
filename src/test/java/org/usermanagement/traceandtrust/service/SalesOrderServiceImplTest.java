@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.usermanagement.traceandtrust.dto.CreateSalesOrderRequest;
+import org.usermanagement.traceandtrust.dto.ReservationResult;
 import org.usermanagement.traceandtrust.dto.SalesOrderDto;
 import org.usermanagement.traceandtrust.dto.SalesOrderLineDto;
 import org.usermanagement.traceandtrust.entity.*;
@@ -57,7 +58,7 @@ class SalesOrderServiceImplTest {
     private SalesOrderMapper salesOrderMapper;
 
     @Mock
-    private InventoryService inventoryService;
+    private StockService inventoryService;
 
     @InjectMocks
     private SalesOrderServiceImpl salesOrderService;
@@ -124,11 +125,9 @@ class SalesOrderServiceImplTest {
         orderLine.setQuantity(10);
         orderLine.setUnitPrice(BigDecimal.valueOf(50.00));
 
-        // SalesOrder
         salesOrder = new SalesOrder();
         salesOrder.setId(orderId);
         salesOrder.setClient(client);
-        salesOrder.setWarehouse(warehouse);
         salesOrder.setStatus(SalesOrderStatus.CREATED);
         salesOrder.getOrderLines().add(orderLine);
 
@@ -144,7 +143,6 @@ class SalesOrderServiceImplTest {
         lineDto.setUnitPrice(BigDecimal.valueOf(50.00));
 
         createRequest = new CreateSalesOrderRequest();
-        createRequest.setWarehouseId(warehouseId);
         createRequest.setOrderLines(Arrays.asList(lineDto));
     }
 
@@ -156,38 +154,32 @@ class SalesOrderServiceImplTest {
     @DisplayName("Créer une commande de vente - Succès avec CLIENT")
     void createSalesOrder_Success_WithClient() {
         // ARRANGE
-        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
-        when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
-        when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
-        when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
+        // Mocking SecurityContext for getCurrentUserEmail
+        try (var mockedSecurity = mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
+            org.springframework.security.core.context.SecurityContext securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
+            org.springframework.security.core.Authentication authentication = mock(org.springframework.security.core.Authentication.class);
+            
+            mockedSecurity.when(org.springframework.security.core.context.SecurityContextHolder::getContext).thenReturn(securityContext);
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("client@test.com");
 
-        // ACT
-        SalesOrderDto result = salesOrderService.createSalesOrder(createRequest);
+            when(userRepository.findByEmail("client@test.com")).thenReturn(Optional.of(client));
+            when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+            when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
+            when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
-        // ASSERT
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(orderId);
-        assertThat(result.getStatus()).isEqualTo(SalesOrderStatus.CREATED);
+            // ACT
+            SalesOrderDto result = salesOrderService.createSalesOrder(createRequest);
 
-        verify(userRepository, times(1)).findById(clientId);
-        verify(warehouseRepository, times(1)).findById(warehouseId);
-        verify(productRepository, times(1)).findById(productId);
-        verify(salesOrderRepository, times(1)).save(any(SalesOrder.class));
-    }
+            // ASSERT
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(orderId);
+            assertThat(result.getStatus()).isEqualTo(SalesOrderStatus.CREATED);
 
-    @Test
-    @DisplayName("Créer une commande de vente - Échec : Utilisateur non CLIENT")
-    void createSalesOrder_ThrowsForbiddenAccessException_WhenNotClient() {
-        // ARRANGE
-        when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
-
-        // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
-                .isInstanceOf(ForbiddenAccessException.class)
-                .hasMessageContaining("Only CLIENT users can create sales orders");
-
-        verify(warehouseRepository, never()).findById(any());
+            verify(userRepository, times(1)).findByEmail("client@test.com");
+            verify(productRepository, times(1)).findById(productId);
+            verify(salesOrderRepository, times(1)).save(any(SalesOrder.class));
+        }
     }
 
     @Test
@@ -196,61 +188,71 @@ class SalesOrderServiceImplTest {
         // ARRANGE
         product.setActive(false);
 
-        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
-        when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        try (var mockedSecurity = mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
+            org.springframework.security.core.context.SecurityContext securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
+            org.springframework.security.core.Authentication authentication = mock(org.springframework.security.core.Authentication.class);
+            
+            mockedSecurity.when(org.springframework.security.core.context.SecurityContextHolder::getContext).thenReturn(securityContext);
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("client@test.com");
 
-        // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("not available for sale");
+            when(userRepository.findByEmail("client@test.com")).thenReturn(Optional.of(client));
+            when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        verify(salesOrderRepository, never()).save(any(SalesOrder.class));
-    }
+            // ACT & ASSERT
+            assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("not available for sale");
 
-    @Test
-    @DisplayName("Créer une commande de vente - Échec : Warehouse non trouvé")
-    void createSalesOrder_ThrowsResourceNotFoundException_WhenWarehouseNotFound() {
-        // ARRANGE
-        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
-        when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.empty());
-
-        // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Warehouse not found");
-
-        verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+            verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+        }
     }
 
     @Test
     @DisplayName("Créer une commande de vente - Échec : Produit non trouvé")
     void createSalesOrder_ThrowsResourceNotFoundException_WhenProductNotFound() {
         // ARRANGE
-        when(userRepository.findById(clientId)).thenReturn(Optional.of(client));
-        when(warehouseRepository.findById(warehouseId)).thenReturn(Optional.of(warehouse));
-        when(productRepository.findById(productId)).thenReturn(Optional.empty());
+        try (var mockedSecurity = mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
+            org.springframework.security.core.context.SecurityContext securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
+            org.springframework.security.core.Authentication authentication = mock(org.springframework.security.core.Authentication.class);
+            
+            mockedSecurity.when(org.springframework.security.core.context.SecurityContextHolder::getContext).thenReturn(securityContext);
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("client@test.com");
 
-        // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Product not found");
+            when(userRepository.findByEmail("client@test.com")).thenReturn(Optional.of(client));
+            when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+            // ACT & ASSERT
+            assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Product not found");
+
+            verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+        }
     }
 
     @Test
     @DisplayName("Créer une commande de vente - Échec : Utilisateur non trouvé")
     void createSalesOrder_ThrowsResourceNotFoundException_WhenUserNotFound() {
         // ARRANGE
-        when(userRepository.findById(clientId)).thenReturn(Optional.empty());
+        try (var mockedSecurity = mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
+            org.springframework.security.core.context.SecurityContext securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
+            org.springframework.security.core.Authentication authentication = mock(org.springframework.security.core.Authentication.class);
+            
+            mockedSecurity.when(org.springframework.security.core.context.SecurityContextHolder::getContext).thenReturn(securityContext);
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn("notfound@test.com");
 
-        // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Actor not found");
+            when(userRepository.findByEmail("notfound@test.com")).thenReturn(Optional.empty());
 
-        verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+            // ACT & ASSERT
+            assertThatThrownBy(() -> salesOrderService.createSalesOrder(createRequest))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("User not found");
+
+            verify(salesOrderRepository, never()).save(any(SalesOrder.class));
+        }
     }
 
     // ============================================
@@ -262,12 +264,17 @@ class SalesOrderServiceImplTest {
     void reserveOrder_Success() {
         // ARRANGE
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
-        doNothing().when(inventoryService).reserveStock(any(), any());
+        ReservationResult reservationResult = ReservationResult.builder()
+                .fullyReserved(true)
+                .reservedQuantities(new java.util.HashMap<>())
+                .backorderQuantities(new java.util.HashMap<>())
+                .build();
+        when(inventoryService.reserveStock(any(), any())).thenReturn(reservationResult);
         when(salesOrderRepository.save(any(SalesOrder.class))).thenReturn(salesOrder);
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.reserveOrder(orderId);
+        SalesOrderDto result = salesOrderService.reserveOrder(orderId, warehouseId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -287,7 +294,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId, warehouseId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Only orders with CREATED status can be reserved");
 
@@ -302,7 +309,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.reserveOrder(orderId, warehouseId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Sales Order not found");
 
@@ -325,7 +332,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.cancelOrder(orderId);
+        SalesOrderDto result = salesOrderService.cancelOrder(orderId, null);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -350,7 +357,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderMapper.toDto(any(SalesOrder.class))).thenReturn(salesOrderDto);
 
         // ACT
-        SalesOrderDto result = salesOrderService.cancelOrder(orderId);
+        SalesOrderDto result = salesOrderService.cancelOrder(orderId, warehouseId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -370,7 +377,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot cancel an order that has already been shipped or delivered");
 
@@ -388,7 +395,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot cancel an order that has already been shipped or delivered");
 
@@ -406,7 +413,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.of(salesOrder));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("This order has already been canceled");
 
@@ -421,7 +428,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(ForbiddenAccessException.class)
                 .hasMessageContaining("This operation is restricted to ADMIN users");
 
@@ -436,7 +443,7 @@ class SalesOrderServiceImplTest {
         when(salesOrderRepository.findById(orderId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Sales Order not found");
 
@@ -450,7 +457,7 @@ class SalesOrderServiceImplTest {
         when(userRepository.findById(adminId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId))
+        assertThatThrownBy(() -> salesOrderService.cancelOrder(orderId, null))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Actor not found");
 

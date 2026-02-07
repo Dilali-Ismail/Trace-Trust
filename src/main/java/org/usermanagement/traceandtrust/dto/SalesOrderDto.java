@@ -11,8 +11,8 @@ import java.util.UUID;
 public class SalesOrderDto {
     private UUID id;
     private UUID clientId;
-    private UUID warehouseId;
     private SalesOrderStatus status;
     private List<SalesOrderLineDto> orderLines;
+    private List<BackorderDto> backorders;
     private Instant createdAt;
 }

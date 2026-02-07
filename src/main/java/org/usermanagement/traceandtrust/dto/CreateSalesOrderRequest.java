@@ -10,8 +10,6 @@ import java.util.UUID;
 
 @Data
 public class CreateSalesOrderRequest {
-    @NotNull(message = "Source warehouse ID is required")
-    private UUID warehouseId;
 
     @NotEmpty(message = "Sales order must have at least one line")
     @Valid

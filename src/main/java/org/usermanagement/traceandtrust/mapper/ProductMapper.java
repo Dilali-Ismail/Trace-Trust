@@ -11,5 +11,6 @@ public interface ProductMapper {
     ProductDto toDto(Product product);
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", ignore = true)
+    @Mapping(target = "imageUrl", ignore = true)
     Product toEntity(CreateProductRequest request);
 }

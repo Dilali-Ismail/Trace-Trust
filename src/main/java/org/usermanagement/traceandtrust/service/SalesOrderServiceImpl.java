@@ -35,7 +35,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final SalesOrderMapper salesOrderMapper;
-    private final InventoryService inventoryService;
+    private final StockService inventoryService;
 
     public SalesOrderDto createSalesOrder(CreateSalesOrderRequest request){
         String email = getCurrentUserEmail();
@@ -44,12 +44,9 @@ public class SalesOrderServiceImpl implements SalesOrderService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found with email: " + email)
                 );
-        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
 
         SalesOrder salesOrder = new SalesOrder();
         salesOrder.setClient(client);
-        salesOrder.setWarehouse(warehouse);
         salesOrder.setStatus(SalesOrderStatus.CREATED);
 
         for (SalesOrderLineDto lineDto : request.getOrderLines()) {
@@ -78,7 +75,8 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
     }
 
-    public SalesOrderDto reserveOrder(UUID orderId){
+    @Transactional
+    public SalesOrderDto reserveOrder(UUID orderId, UUID warehouseId) {
         SalesOrder salesOrder = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
 
@@ -86,21 +84,51 @@ public class SalesOrderServiceImpl implements SalesOrderService {
             throw new BusinessException("Only orders with CREATED status can be reserved. Current status: " + salesOrder.getStatus());
         }
 
-        inventoryService.reserveStock(salesOrder.getOrderLines(),salesOrder.getWarehouse().getId());
-        salesOrder.setStatus(SalesOrderStatus.RESERVED);
-        SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
-        
-        MDC.put("business_id", orderId.toString());
-        log.info("Sales order reserved. Status changed to RESERVED.");
-        MDC.remove("business_id");
-        
-        return salesOrderMapper.toDto(savedOrder);
+        org.usermanagement.traceandtrust.dto.ReservationResult result = inventoryService.reserveStock(salesOrder.getOrderLines(), warehouseId);
 
+        // Update lines with backorders if any
+        for (SalesOrderLine line : salesOrder.getOrderLines()) {
+            Integer backorderQty = result.getBackorderQuantities().get(line.getProduct().getId());
+            if (backorderQty != null && backorderQty > 0) {
+                SalesOrderBackorder backorder = SalesOrderBackorder.builder()
+                        .salesOrderLine(line)
+                        .quantityPending(backorderQty)
+                        .reason("Insufficient stock in warehouse " + warehouseId)
+                        .build();
+                line.setBackorder(backorder);
+            }
+        }
+
+        if (result.isFullyReserved()) {
+            salesOrder.setStatus(SalesOrderStatus.RESERVED);
+        } else {
+            // If partial, we still mark as RESERVED (or maybe PARTIALLY_RESERVED if we had that enum)
+            // The requirement says "Action “Réserver” : affiche backorders si partiel"
+            // Let's keep RESERVED for now, but the presence of backorders in DTO will show the partial state
+            salesOrder.setStatus(SalesOrderStatus.RESERVED);
+        }
+
+        SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
+
+        MDC.put("business_id", orderId.toString());
+        log.info("Sales order reservation processed. Fully reserved: {}", result.isFullyReserved());
+        MDC.remove("business_id");
+
+        return salesOrderMapper.toDto(savedOrder);
     }
 
     @Override
     @Transactional
-    public SalesOrderDto cancelOrder(UUID orderId){
+    public SalesOrderDto requestReservation(UUID orderId, UUID warehouseId) {
+        // Here we can enforce specific business rules for CLIENTS
+        // Currently, it's the same logic as admin reserveOrder, but could differ later
+        return reserveOrder(orderId, warehouseId);
+    }
+
+
+    @Override
+    @Transactional
+    public SalesOrderDto cancelOrder(UUID orderId, UUID warehouseId){
 
         SalesOrder salesOrder = salesOrderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sales Order not found with id: " + orderId));
@@ -110,8 +138,10 @@ public class SalesOrderServiceImpl implements SalesOrderService {
                 break;
 
             case RESERVED:
-
-                inventoryService.releaseStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId());
+                if (warehouseId == null) {
+                    throw new BusinessException("Warehouse ID is required to release stock for reserved order cancellation.");
+                }
+                inventoryService.releaseStock(salesOrder.getOrderLines(), warehouseId);
                 salesOrder.setStatus(SalesOrderStatus.CANCELED);
                 break;
 
@@ -120,7 +150,6 @@ public class SalesOrderServiceImpl implements SalesOrderService {
                 throw new BusinessException("Cannot cancel an order that has already been shipped or delivered.");
 
             case CANCELED:
-
                 throw new BusinessException("This order has already been canceled.");
         }
 

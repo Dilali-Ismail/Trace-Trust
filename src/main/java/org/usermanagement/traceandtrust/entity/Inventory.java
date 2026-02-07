@@ -33,9 +33,11 @@ public class Inventory {
     @JoinColumn(name = "warehouse_id",nullable = false)
     private Warehouse warehouse;
 
+    @Builder.Default
     @Column(name = "qty_on_hand", nullable = false)
     private long quantity_hand = 0 ;
 
+    @Builder.Default
     @Column(name = "qty_reserved", nullable = false)
     private long  quantity_reserved = 0;
 

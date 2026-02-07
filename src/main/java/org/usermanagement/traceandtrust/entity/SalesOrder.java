@@ -26,10 +26,6 @@ public class SalesOrder {
     @JoinColumn(name = "client_id", nullable = false)
     private User client;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "warehouse_id", nullable = false)
-    private Warehouse warehouse;
-
     @OneToMany(
             mappedBy = "salesOrder",
             cascade = CascadeType.ALL,

@@ -38,7 +38,7 @@ public class ShipmentServiceImpl implements ShipmentService {
     private final SalesOrderRepository salesOrderRepository;
     private final CarrierRepository carrierRepository;
     private final ShipmentMapper shipmentMapper;
-    private final InventoryService inventoryService;
+    private final StockService inventoryService;
 
     public  ShipmentDto createShipment(CreateShipmentRequest request){
 
@@ -67,6 +67,7 @@ public class ShipmentServiceImpl implements ShipmentService {
        shipment.setCarrier(carrier);
        shipment.setTrackingNumber(request.getTrackingNumber());
        shipment.setStatus(ShipmentStatus.PLANNED);
+       shipment.setCreatedAt(Instant.now());
 
        Shipment savedShipment = shipmentRepository.save(shipment);
        return shipmentMapper.toDto(savedShipment);
@@ -89,8 +90,26 @@ public class ShipmentServiceImpl implements ShipmentService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public ShipmentDto getShipmentById(UUID shipmentId) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
+
+        String role = getCurrentUserRole();
+        String email = getCurrentUserEmail();
+
+        // If CLIENT, verify ownership
+        if ("ROLE_CLIENT".equals(role)) {
+            if (!shipment.getSalesOrder().getClient().getEmail().equals(email)) {
+                throw new ForbiddenAccessException("You are not authorized to view this shipment.");
+            }
+        }
+
+        return shipmentMapper.toDto(shipment);
+    }
+
     @Transactional
-   public ShipmentDto dispatchShipment(UUID shipmentId){
+   public ShipmentDto dispatchShipment(UUID shipmentId, UUID warehouseId){
 
        Shipment shipment = shipmentRepository.findById(shipmentId)
                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found with id: " + shipmentId));
@@ -100,7 +119,7 @@ public class ShipmentServiceImpl implements ShipmentService {
        }
 
        SalesOrder salesOrder = shipment.getSalesOrder();
-       inventoryService.dispatchStock(salesOrder.getOrderLines(), salesOrder.getWarehouse().getId());
+       inventoryService.dispatchStock(salesOrder.getOrderLines(), warehouseId);
 
        shipment.setStatus(ShipmentStatus.IN_TRANSIT);
        shipment.setShippedAt(Instant.now());

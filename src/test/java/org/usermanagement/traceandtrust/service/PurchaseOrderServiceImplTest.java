@@ -54,7 +54,7 @@ class PurchaseOrderServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private InventoryService inventoryService;
+    private StockService inventoryService;
 
     @Mock
     private WarehouseRepository warehouseRepository;

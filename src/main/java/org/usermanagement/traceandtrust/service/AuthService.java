@@ -27,6 +27,7 @@ public class AuthService {
     public AuthResponse login(LoginRequest loginRequest){
 
         try {
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -35,6 +36,10 @@ public class AuthService {
             );
 
             User user = userDetailsService.getUserByEmail(loginRequest.getEmail());
+            
+            if (!user.isActive()) {
+                throw new org.springframework.security.authentication.DisabledException("Compte utilisateur désactivé");
+            }
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String accessToken = jwtService.generateAcessToken(userDetails, user.getRole().name());
@@ -66,7 +71,7 @@ public class AuthService {
 
         User user = refreshToken.getUser();
 
-        if (!user.isEnabled()) {
+        if (!user.isActive()) {
             throw new RuntimeException("Compte utilisateur désactivé");
         }
 

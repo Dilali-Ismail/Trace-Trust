@@ -34,12 +34,19 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Builder.Default
     @Column(name = "account_locked")
     private boolean accountLocked = false;
 
+    @Builder.Default
     @Column(name = "failed_attempts")
     private int failedAttempts = 0;
 

@@ -84,6 +84,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDto toggleUserStatus(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        user.setActive(!user.isActive());
+        User updatedUser = userRepository.save(user);
+        
+        return userMapper.toDto(updatedUser);
+    }
+
+    @Override
     public void deleteUser(UUID id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found with id: " + id);

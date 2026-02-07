@@ -58,7 +58,7 @@ class ShipmentServiceImplTest {
     private ShipmentMapper shipmentMapper;
 
     @Mock
-    private InventoryService inventoryService;
+    private StockService inventoryService;
 
     @InjectMocks
     private ShipmentServiceImpl shipmentService;
@@ -120,11 +120,9 @@ class ShipmentServiceImplTest {
         carrier.setName("DHL Express");
         carrier.setActive(true);
 
-        // SalesOrder
         salesOrder = new SalesOrder();
         salesOrder.setId(salesOrderId);
         salesOrder.setStatus(SalesOrderStatus.RESERVED);
-        salesOrder.setWarehouse(warehouse);
         salesOrder.setOrderLines(Arrays.asList());
 
         // Shipment
@@ -339,7 +337,7 @@ class ShipmentServiceImplTest {
         when(shipmentMapper.toDto(any(Shipment.class))).thenReturn(shipmentDto);
 
         // ACT
-        ShipmentDto result = shipmentService.dispatchShipment(shipmentId);
+        ShipmentDto result = shipmentService.dispatchShipment(shipmentId, warehouseId);
 
         // ASSERT
         assertThat(result).isNotNull();
@@ -362,7 +360,7 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.of(shipment));
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId))
+        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId, warehouseId))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("status is PLANNED");
 
@@ -378,7 +376,7 @@ class ShipmentServiceImplTest {
         when(shipmentRepository.findById(shipmentId)).thenReturn(Optional.empty());
 
         // ACT & ASSERT
-        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId))
+        assertThatThrownBy(() -> shipmentService.dispatchShipment(shipmentId, warehouseId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Shipment not found");
 

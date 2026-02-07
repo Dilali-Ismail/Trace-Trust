@@ -30,4 +30,7 @@ public class Product {
     @Column(name = "cost_price", precision = 10, scale = 2)
     private BigDecimal costPrice;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
 }

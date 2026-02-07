@@ -14,6 +14,7 @@ public interface InventoryMapper {
     @Mapping(source = "product.sku", target = "productSku")
     @Mapping(source = "warehouse.id", target = "warehouseId")
     @Mapping(source = "warehouse.code", target = "warehouseCode")
+    @Mapping(target = "available", ignore = true)
     InventoryDto toDto(Inventory inventory);
 
     @AfterMapping

@@ -37,12 +37,19 @@ public class ShipmentController {
         return ResponseEntity.ok(shipments);
     }
 
-    @PatchMapping("/{shipmentId}/dispatch")
-    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")
-    public ResponseEntity<ShipmentDto> dispatchShipment(
-            @PathVariable UUID shipmentId) {
+    @GetMapping("/{shipmentId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ShipmentDto> getShipmentById(@PathVariable UUID shipmentId) {
+        ShipmentDto shipment = shipmentService.getShipmentById(shipmentId);
+        return ResponseEntity.ok(shipment);
+    }
 
-        ShipmentDto dispatchedShipment = shipmentService.dispatchShipment(shipmentId);
+    @PostMapping("/{shipmentId}/dispatch")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    public ResponseEntity<ShipmentDto> dispatchShipment(
+            @PathVariable UUID shipmentId,
+            @RequestParam UUID warehouseId) {
+        ShipmentDto dispatchedShipment = shipmentService.dispatchShipment(shipmentId, warehouseId);
         return ResponseEntity.ok(dispatchedShipment);
     }
 

@@ -1,68 +1,69 @@
 package org.usermanagement.traceandtrust.service;
 
 import jakarta.transaction.Transactional;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.stat.CacheableDataStatistics;
 import org.springframework.stereotype.Service;
 import org.usermanagement.traceandtrust.dto.CreateMovementRequest;
 import org.usermanagement.traceandtrust.dto.InventoryDto;
+import org.usermanagement.traceandtrust.dto.InventoryMovementDto;
+import org.usermanagement.traceandtrust.dto.ReservationResult;
 import org.usermanagement.traceandtrust.entity.*;
 import org.usermanagement.traceandtrust.enums.MovementType;
-import org.usermanagement.traceandtrust.enums.Role;
 import org.usermanagement.traceandtrust.exception.BusinessException;
-import org.usermanagement.traceandtrust.exception.ForbiddenAccessException;
 import org.usermanagement.traceandtrust.exception.ResourceNotFoundException;
-import org.usermanagement.traceandtrust.exception.StockUnavailableException;
 import org.usermanagement.traceandtrust.mapper.InventoryMapper;
 import org.usermanagement.traceandtrust.repository.*;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.usermanagement.traceandtrust.dto.InventoryMovementDto;
+
 @Service
 @RequiredArgsConstructor
-
-public class InventoryServiceImpl implements InventoryService{
+public class StockServiceImpl implements StockService {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final InventoryRepository inventoryRepository;
     private final InventoryMovementRepository inventoryMovement;
     private final InventoryMapper inventoryMapper;
 
+    @Override
     @Transactional
-   public InventoryDto recordMovement(CreateMovementRequest request){
-       Product product = productRepository.findById(request.getProductId())
-               .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
-       Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-               .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
+    public InventoryDto recordMovement(CreateMovementRequest request) {
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
 
         Inventory inventory = inventoryRepository.findByProductAndWarehouse(product, warehouse)
-                .orElseGet(()-> Inventory.builder()
+                .orElseGet(() -> Inventory.builder()
                         .product(product)
                         .warehouse(warehouse)
+                        .quantity_hand(0L)
+                        .quantity_reserved(0L)
                         .build());
 
-        switch(request.getType()){
-            case INBOUND ->{
-                inventory.setQuantity_hand(inventory.getQuantity_hand() + request.getQuantity());
-                break;
+        switch (request.getType()) {
+            case INBOUND -> inventory.setQuantity_hand(inventory.getQuantity_hand() + request.getQuantity());
+            case OUTBOUND -> {
+                long availableStock = inventory.getQuantity_hand() - inventory.getQuantity_reserved();
+                if (availableStock < request.getQuantity()) {
+                    throw new BusinessException("Insufficient stock for outbound movement. Available: " + availableStock + ", Requested: " + request.getQuantity());
+                }
+                inventory.setQuantity_hand(inventory.getQuantity_hand() - request.getQuantity());
             }
             case ADJUSTMENT -> {
                 long newQtyOnHand = request.getQuantity();
-
                 if (newQtyOnHand < 0) {
                     throw new BusinessException("Adjustment quantity cannot be a negative value.");
                 }
-
                 if (newQtyOnHand < inventory.getQuantity_reserved()) {
                     throw new BusinessException("Adjustment failed: new quantity on hand cannot be less than reserved quantity.");
                 }
                 inventory.setQuantity_hand(newQtyOnHand);
-                break;
             }
         }
+
         Inventory savedInventory = inventoryRepository.save(inventory);
 
         InventoryMovement movement = InventoryMovement.builder()
@@ -72,32 +73,59 @@ public class InventoryServiceImpl implements InventoryService{
                 .quantity(request.getQuantity())
                 .referenceDocument(request.getReferenceDocument())
                 .build();
-         inventoryMovement.save(movement);
-         return inventoryMapper.toDto(savedInventory);
-   }
+        inventoryMovement.save(movement);
+        return inventoryMapper.toDto(savedInventory);
+    }
 
-    public void reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
-
+    @Override
+    @Transactional
+    public ReservationResult reserveStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
+
+        java.util.Map<UUID, Integer> reservedQuantities = new java.util.HashMap<>();
+        java.util.Map<UUID, Integer> backorderQuantities = new java.util.HashMap<>();
+        boolean fullyReserved = true;
+
         for (SalesOrderLine line : orderLines) {
             Product product = line.getProduct();
-            int quantityToReserve = line.getQuantity();
+            int requiredQty = line.getQuantity();
+
             Inventory inventory = inventoryRepository.findByProductAndWarehouse(product, warehouse)
-                    .orElseThrow(() -> new StockUnavailableException("No stock available for product " + product.getSku()));
+                    .orElseGet(() -> {
+                        Inventory newInv = Inventory.builder()
+                                .product(product)
+                                .warehouse(warehouse)
+                                .quantity_hand(0L)
+                                .quantity_reserved(0L)
+                                .build();
+                        return inventoryRepository.save(newInv);
+                    });
 
             long availableStock = inventory.getQuantity_hand() - inventory.getQuantity_reserved();
-            if (availableStock < quantityToReserve) {
-                throw new StockUnavailableException(
-                        "Insufficient stock for product " + product.getSku() +
-                                ". Required: " + quantityToReserve + ", Available: " + availableStock
-                );
+            int reserveQty = (int) Math.min(requiredQty, availableStock);
+            int backorderQty = requiredQty - reserveQty;
+
+            if (reserveQty > 0) {
+                inventory.setQuantity_reserved(inventory.getQuantity_reserved() + reserveQty);
+                inventoryRepository.save(inventory);
+                reservedQuantities.put(product.getId(), reserveQty);
             }
 
-            inventory.setQuantity_reserved(inventory.getQuantity_reserved() + quantityToReserve);
-            inventoryRepository.save(inventory);
+            if (backorderQty > 0) {
+                backorderQuantities.put(product.getId(), backorderQty);
+                fullyReserved = false;
+            }
         }
+
+        return ReservationResult.builder()
+                .fullyReserved(fullyReserved)
+                .reservedQuantities(reservedQuantities)
+                .backorderQuantities(backorderQuantities)
+                .build();
     }
+
+    @Override
     @Transactional
     public void releaseStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
@@ -112,8 +140,10 @@ public class InventoryServiceImpl implements InventoryService{
             });
         }
     }
-    public void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId){
 
+    @Override
+    @Transactional
+    public void dispatchStock(List<SalesOrderLine> orderLines, UUID warehouseId) {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + warehouseId));
         for (SalesOrderLine line : orderLines) {
@@ -136,10 +166,8 @@ public class InventoryServiceImpl implements InventoryService{
                     .warehouse(warehouse)
                     .type(MovementType.OUTBOUND)
                     .quantity(quantityToDispatch)
-                    .referenceDocument("Outbonding")
+                    .referenceDocument("Sales Order Shipment")
                     .build();
-
-
             inventoryMovement.save(movement);
         }
     }
@@ -147,16 +175,16 @@ public class InventoryServiceImpl implements InventoryService{
     @Override
     public List<InventoryDto> getStock(UUID warehouseId, UUID productId) {
         if (warehouseId != null && productId != null) {
-            return inventoryRepository.findByProductAndWarehouse(
-                    productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product not found")),
-                    warehouseRepository.findById(warehouseId).orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"))
-            ).stream().map(inventoryMapper::toDto).collect(Collectors.toList());
+            Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+            Warehouse warehouse = warehouseRepository.findById(warehouseId).orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+            return inventoryRepository.findByProductAndWarehouse(product, warehouse)
+                    .stream().map(inventoryMapper::toDto).collect(Collectors.toList());
         } else if (warehouseId != null) {
             return inventoryRepository.findByWarehouseId(warehouseId).stream()
                     .map(inventoryMapper::toDto)
                     .collect(Collectors.toList());
         } else if (productId != null) {
-             return inventoryRepository.findByProductId(productId).stream()
+            return inventoryRepository.findByProductId(productId).stream()
                     .map(inventoryMapper::toDto)
                     .collect(Collectors.toList());
         } else {
@@ -180,21 +208,21 @@ public class InventoryServiceImpl implements InventoryService{
         }
 
         return movements.stream()
-            .map(this::toMovementDto)
-            .collect(Collectors.toList());
+                .map(this::toMovementDto)
+                .collect(Collectors.toList());
     }
 
     private InventoryMovementDto toMovementDto(InventoryMovement movement) {
         return InventoryMovementDto.builder()
-            .id(movement.getId())
-            .productId(movement.getProduct().getId())
-            .productSku(movement.getProduct().getSku())
-            .warehouseId(movement.getWarehouse().getId())
-            .warehouseName(movement.getWarehouse().getName())
-            .type(movement.getType())
-            .quantity(movement.getQuantity())
-            .referenceDocument(movement.getReferenceDocument())
-            .occurredAt(movement.getOccurredAt())
-            .build();
+                .id(movement.getId())
+                .productId(movement.getProduct().getId())
+                .productSku(movement.getProduct().getSku())
+                .warehouseId(movement.getWarehouse().getId())
+                .warehouseName(movement.getWarehouse().getName())
+                .type(movement.getType())
+                .quantity(movement.getQuantity())
+                .referenceDocument(movement.getReferenceDocument())
+                .occurredAt(movement.getOccurredAt())
+                .build();
     }
 }

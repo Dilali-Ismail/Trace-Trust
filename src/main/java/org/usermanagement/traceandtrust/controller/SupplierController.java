@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usermanagement.traceandtrust.dto.CreateSupplierRequest;
 import org.usermanagement.traceandtrust.dto.SupplierDto;
+import org.usermanagement.traceandtrust.dto.UpdateSupplierRequest;
 import org.usermanagement.traceandtrust.service.SupplierService;
 
 import java.util.List;
@@ -34,5 +35,27 @@ public class SupplierController {
         return ResponseEntity.ok(suppliers);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
+    public ResponseEntity<SupplierDto> getSupplierById(@PathVariable UUID id) {
+        SupplierDto supplier = supplierService.getSupplierById(id);
+        return ResponseEntity.ok(supplier);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SupplierDto> updateSupplier(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateSupplierRequest request) {
+        SupplierDto updatedSupplier = supplierService.updateSupplier(id, request);
+        return ResponseEntity.ok(updatedSupplier);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteSupplier(@PathVariable UUID id) {
+        supplierService.deleteSupplier(id);
+        return ResponseEntity.noContent().build();
+    }
 
 }

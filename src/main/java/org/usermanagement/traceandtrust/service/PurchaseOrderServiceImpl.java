@@ -26,7 +26,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final ProductRepository productRepository;
     private final SupplierRepository supplierRepository;
-    private final InventoryService inventoryService;
+    private final StockService inventoryService;
     private final WarehouseRepository warehouseRepository;
 
     public PurchaseOrderDto createPurshOrder(CreatePurchaseOrderRequest request){

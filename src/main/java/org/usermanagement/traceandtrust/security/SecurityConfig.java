@@ -34,11 +34,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(org.springframework.security.config.Customizer.withDefaults())
 
                 // Configuration des autorisations
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints publics (accessibles sans authentification)
                         .requestMatchers(
+                                "/api/auth/**",
                                 "/auth/**",           // Login, refresh, register
                                 "/api/public/**",     // APIs publiques
                                 "/error",              // Page d'erreur
@@ -46,6 +48,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/**").permitAll()
 
                         // Tous les autres endpoints nécessitent une authentification
                         .anyRequest().authenticated()

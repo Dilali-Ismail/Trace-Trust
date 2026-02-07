@@ -14,6 +14,7 @@ public class ShipmentDto {
     private String carrierName;
     private ShipmentStatus status;
     private String trackingNumber;
+    private Instant createdAt;
     private Instant shippedAt;
     private Instant deliveredAt;
 }

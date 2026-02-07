@@ -9,7 +9,8 @@ import java.util.UUID;
 public interface ShipmentService {
 
     ShipmentDto createShipment(CreateShipmentRequest request);
-    ShipmentDto dispatchShipment(UUID shipmentId);
+    ShipmentDto dispatchShipment(UUID shipmentId, UUID warehouseId);
     List<ShipmentDto> getAllShipments();
+    ShipmentDto getShipmentById(UUID shipmentId);
     ShipmentDto markShipmentAsDelivered(UUID shipmentId);
 }

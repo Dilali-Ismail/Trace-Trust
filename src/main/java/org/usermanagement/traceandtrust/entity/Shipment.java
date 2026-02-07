@@ -39,5 +39,8 @@ public class Shipment {
     @Column(name = "delivered_at")
     private Instant deliveredAt;
 
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
 
 }

@@ -11,6 +11,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class PurchaseOrderLineDto {
+    private UUID id;  // The order line's own ID (needed for receiving)
+
     @NotNull
     private UUID productId;
 

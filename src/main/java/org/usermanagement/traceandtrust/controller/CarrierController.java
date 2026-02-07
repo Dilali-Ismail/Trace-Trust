@@ -26,7 +26,7 @@ public class CarrierController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE_MANAGER')")
     public ResponseEntity<List<CarrierDto>> getAllCarriers() {
         return ResponseEntity.ok(carrierService.getAllCarriers());
     }

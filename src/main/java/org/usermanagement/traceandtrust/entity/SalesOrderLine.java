@@ -30,4 +30,6 @@ public class SalesOrderLine {
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
+    @OneToOne(mappedBy = "salesOrderLine", cascade = CascadeType.ALL)
+    private SalesOrderBackorder backorder;
 }
